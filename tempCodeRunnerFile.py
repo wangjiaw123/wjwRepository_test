@@ -1,2 +1,0 @@
-
-dtime=endtime-startime

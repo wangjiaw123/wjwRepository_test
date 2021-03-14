@@ -2,11 +2,12 @@
 import tensorflow as tf
 import numpy as np
 #from SingleT2FLS_Mamdani import *
-from SingleT2FLS_Mamdani_new import *
+#from SingleT2FLS_Mamdani_new import *
+from SingleT2FLS_Mamdani_modify import *
 import time
 
 
-N=50
+N=1
 train_data_x=np.random.random((N,6))
 train_data_y=np.random.random((N,1))
 val_data_x=np.random.random((N,6))
@@ -61,8 +62,6 @@ print('loss',Loss)
 
 
 print('grades',grades)
-
-
 
 
 
