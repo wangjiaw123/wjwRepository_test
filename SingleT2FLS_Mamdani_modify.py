@@ -50,13 +50,13 @@ class SingleT2FLS_Mamdani(tf.keras.Model):
         b2=c1_sort
         s = tf.reduce_sum(tf.multiply(b2,LL_sort))
         s1 = tf.reduce_sum(LL_sort)
-        L_out = np.ones(self.Rule_num)
+        L_out = tf.ones(self.Rule_num)
         l_out = s/s1
         for i in range(self.Rule_num):
             s += b2[i]*(UU_sort[i]-LL_sort[i])
             s1 += UU_sort[i]-LL_sort[i]
             l_out = tf.minimum(l_out,s/s1)
-            L_out[i] = tf.minimum(l_out,s/s1)
+            L_out = tf.tensor_scatter_nd_update(L_out,tf.constant([[i]]),[tf.minimum(l_out,s/s1)])
         L_locat = tf.argmin(L_out,0)
         return L_locat
 
@@ -68,13 +68,13 @@ class SingleT2FLS_Mamdani(tf.keras.Model):
         b1=c2_sort
         s = tf.reduce_sum(tf.multiply(b1,UU_sort))
         s1 = tf.reduce_sum(UU_sort)
-        R_out = np.ones(self.Rule_num)
+        R_out = tf.ones(self.Rule_num)
         r_out = s/s1
         for i in range(self.Rule_num):
             s += b1[i]*(LL_sort[i]-UU_sort[i])
             s1 += LL_sort[i]-UU_sort[i]
             r_out = tf.maximum(r_out,s/s1)
-            R_out[i] = tf.maximum(r_out,s/s1)
+            R_out = tf.tensor_scatter_nd_update(R_out,tf.constant([[i]]),[tf.maximum(r_out,s/s1)])
 
         R_locat = tf.argmax(R_out)
 

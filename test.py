@@ -7,7 +7,7 @@ from SingleT2FLS_Mamdani_modify import *
 import time
 
 
-N=10
+N=200
 train_data_x=np.random.random((N,6))
 train_data_y=np.random.random((N,1))
 val_data_x=np.random.random((N,6))
@@ -34,8 +34,8 @@ LL=[['G','G','G','G','G','G'],['G','G','G','G','G','G'],
 startime=time.time()
 FLS2=SingleT2FLS_Mamdani(16,6,LL)
 
-print('FLS2.variables',FLS2.variables)
-print('FLS2.trainable_variables:',FLS2.trainable_variables)
+#print('FLS2.variables',FLS2.variables)
+#print('FLS2.trainable_variables:',FLS2.trainable_variables)
 
 
 #FLS2.build(input_shape=[None,6])
