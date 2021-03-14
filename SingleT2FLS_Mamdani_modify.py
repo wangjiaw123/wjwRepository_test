@@ -61,7 +61,7 @@ class SingleT2FLS_Mamdani(tf.keras.Model):
         return L_locat
 
     def Compute_RightPoint_locat(self,c2_sort,UU_sort,LL_sort):
-        tf.keras.backend.set_floatx('float32')
+        #tf.keras.backend.set_floatx('float32')
         r_out = 0
         s = 0
         s1 = 0
