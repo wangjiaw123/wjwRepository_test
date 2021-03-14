@@ -98,21 +98,21 @@ class SingleT2FLS_Mamdani(tf.keras.Model):
             #LL=tf.Variable(tf.zeros((self.Rule_num,)))    #tf.random.get_global_generator().normal(shape=(self.Rule_num,))
             # UU=np.ones(self.Rule_num)
             # LL=np.ones(self.Rule_num)
-        UU = tf.Variable(tf.ones(self.Rule_num))
-        LL = tf.Variable(tf.ones(self.Rule_num))
+        UU = tf.ones(self.Rule_num)
+        LL = tf.ones(self.Rule_num)
         for j in range(self.Rule_num):
-            Uu = tf.Variable(1.0,tf.float32)
-            Ll = tf.Variable(1.0,tf.float32)
-
+            Uu = tf.constant(1.0)
+            Ll = tf.constant(1.0)
+            print('Uu={0},Ll={1}'.format(Uu,Ll))
             for k in range(self.Antecedents_num):
                 locat_num = self.Antecedents_num*j+k
                 if self.Init_SetupList[j][k]=='G':
                     #print('----------input[0]',input[0])
                     mu_small,mu_big = Gausstype2(input[0][k],self.FRB_weights[locat_num:locat_num+3])
                 print('Uu:',Uu) 
-                #print('mu_big:',mu_big)   
-                Uu = tf.Variable(Uu*mu_big)
-                Ll = tf.Variable(Ll*mu_small)
+                print('mu_big:',mu_big)   
+                Uu = Uu*mu_big
+                Ll = Ll*mu_small
                 print('*-*-*-*-*-*-*-*-*-*--*-*-*-*-')
                 print('Uu:',Uu)
                 #print('Ll:',Ll)
@@ -121,8 +121,8 @@ class SingleT2FLS_Mamdani(tf.keras.Model):
                 # LL[j].assign(Ll)
                 #print('Uu:',Uu)
                 #print('Uu.shape:',tf.shape(Uu))
-            UU=tf.Variable(tf.tensor_scatter_nd_update(UU,tf.constant([[j]]),[Uu]))
-            LL=tf.Variable(tf.tensor_scatter_nd_update(LL,tf.constant([[j]]),[Ll]))
+            UU=tf.tensor_scatter_nd_update(UU,tf.constant([[j]]),[Uu])
+            LL=tf.tensor_scatter_nd_update(LL,tf.constant([[j]]),[Ll])
                 #print('UU[j]-Uu:',UU[j]-Uu)
                 #print('UU[j].shape:',tf.shape(UU[j]))
         print('---------------------------------------------')
@@ -132,15 +132,15 @@ class SingleT2FLS_Mamdani(tf.keras.Model):
         #tf.cast(LL,dtype=tf.float32)
         L_c1_sort = tf.sort(self.c1,direction='ASCENDING')
         L_c1_index = tf.argsort(self.c1,direction='ASCENDING')
-        L_UU_sort = tf.Variable(tf.gather(UU,L_c1_index))
-        L_LL_sort = tf.Variable(tf.gather(LL,L_c1_index))  
+        L_UU_sort = tf.gather(UU,L_c1_index)
+        L_LL_sort = tf.gather(LL,L_c1_index)  
         print('L_UU_sort:',L_UU_sort)
         print('*********L_LL_sort= \n',L_LL_sort)            
 
         R_c2_sort = tf.sort(self.c2,direction='ASCENDING')
         R_c2_index = tf.argsort(self.c2,direction='ASCENDING')
-        R_UU_sort = tf.Variable(tf.gather(UU,R_c2_index))
-        R_LL_sort = tf.Variable(tf.gather(LL,R_c2_index))
+        R_UU_sort = tf.gather(UU,R_c2_index)
+        R_LL_sort = tf.gather(LL,R_c2_index)
         print('R_UU_sort:',R_UU_sort)
         print('*********R_LL_sort= \n',R_LL_sort)
 
@@ -163,12 +163,12 @@ class SingleT2FLS_Mamdani(tf.keras.Model):
 
         print('**---------++++++++++++++------**********--------++++++++')
 
-        L_U_sort = tf.Variable(tf.ones(self.Rule_num))
-        R_L_sort = tf.Variable(tf.ones(self.Rule_num))
+        L_U_sort = tf.ones(self.Rule_num)
+        R_L_sort = tf.ones(self.Rule_num)
         for i in range(L_locat+1):
-            L_U_sort[i].assign(L_UU_sort[i])
+            L_U_sort=tf.tensor_scatter_nd_update(L_U_sort,tf.constant([[i]]),[L_UU_sort[i]])
         for j in range(L_locat+1,self.Rule_num,1):
-            L_U_sort[j].assign(L_LL_sort[j])
+            L_U_sort=tf.tensor_scatter_nd_update(L_U_sort,tf.constant([[j]]),[L_LL_sort[j]])
 
         #L_U_sort[0:L_locat+1].assign(L_UU_sort[0:L_locat+1],tf.float32)
         print('-+-+-+-+-+-L_U_sort-*-**-*-*-*-*++*-*-/-///-**+-+-+:',L_U_sort)
@@ -179,14 +179,15 @@ class SingleT2FLS_Mamdani(tf.keras.Model):
         # L_U_sort[L_locat+1:] = tf.tensor_scatter_nd_update(L_U_sort[L_locat+1:],\
         #     tf.constanf([[x] for x in range(L_locat+1:self.Rule_num)],[[y] for y in L_LL_sort[L_locat+1:]])
         for i in range(R_locat+1):
-            R_L_sort[i].assign(R_LL_sort[i])
+            R_L_sort=tf.tensor_scatter_nd_update(R_L_sort,tf.constant([[i]]),[R_LL_sort[i]])
         for j in range(R_locat+1,self.Rule_num,1):
-            R_L_sort[j].assign(R_UU_sort[j])  
+            R_L_sort=tf.tensor_scatter_nd_update(R_L_sort,tf.constant([[j]]),[R_UU_sort[j]])  
 
         print('-+-+-+-+-+-R_L_sort-*-**-*-*-*-*++*-*-/-///-**+-+-+:',R_L_sort)
         #R_L_sort[0:R_locat+1].assign(R_LL_sort[0:R_locat+1])
         #R_L_sort[R_locat+1:].assign(R_UU_sort[R_locat+1:])
         #Output_Left = tf.Variable(1.0)
+
         Output_Left = tf.reduce_sum(tf.multiply(self.c1,L_U_sort))/tf.reduce_sum(L_U_sort)
         print('Output_left:',Output_Left)
         Output_Right = tf.reduce_sum(tf.multiply(self.c2,R_L_sort))/tf.reduce_sum(R_L_sort)
