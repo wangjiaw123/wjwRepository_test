@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# @Time    : 2021/3/4
+# @Time    : 2021/3/14
 # @Author  : Wangjiawen
 
 from MembershipFunction import *
@@ -80,6 +80,7 @@ class SingleT2FLS_Mamdani(tf.keras.Model):
         return R_locat
 
     def call(self,input_data):
+        print('*****----+++++*****-----+++++++******------++++++-----*********--------+++++++++*****')
         #tf.keras.backend.set_floatx('float64')
         samples_num = input_data.shape[0]
         Output_Left=tf.ones(samples_num)
@@ -96,19 +97,20 @@ class SingleT2FLS_Mamdani(tf.keras.Model):
                 Ll = tf.constant(1.0)
                 for k in range(self.Antecedents_num):
                     locat_num = self.Antecedents_num*j+k
+                    #隶属函数还可以再添加
                     if self.Init_SetupList[j][k]=='G':
                         mu_small,mu_big = Gausstype2(input[k],self.FRB_weights[locat_num:locat_num+3])
 
-                    print('-----------mu_big:',mu_big)
-                    print('+++++++++++mu_small:',mu_small)
+                    #print('-----------mu_big:',mu_big)
+                    #print('+++++++++++mu_small:',mu_small)
                     Uu = Uu*mu_big
                     Ll = Ll*mu_small
 
                 UU=tf.tensor_scatter_nd_update(UU,tf.constant([[j]]),[Uu])
                 LL=tf.tensor_scatter_nd_update(LL,tf.constant([[j]]),[Ll])
-                print('///////////////////////////////////////////////////////')
-                print('UU:',UU)
-                print('LL:',LL)
+                #print('///////////////////////////////////////////////////////')
+                #print('UU:',UU)
+                #print('LL:',LL)
 
             L_c1_sort = tf.sort(self.c1,direction='ASCENDING')
             L_c1_index = tf.argsort(self.c1,direction='ASCENDING')
@@ -124,15 +126,16 @@ class SingleT2FLS_Mamdani(tf.keras.Model):
             R_locat = self.Compute_RightPoint_locat(R_c2_sort,R_UU_sort,R_LL_sort)
 
             #print('self.count:',self.count)
-            if self.count==0:
-                tf.no_gradient('self.Compute_LeftPoint_locat')
-                tf.no_gradient('self.Compute_RightPoint_locat')
-            self.count+=1
+            #if self.count==0:
+            #    tf.no_gradient('self.Compute_LeftPoint_locat')
+            #    tf.no_gradient('self.Compute_RightPoint_locat')
+            #self.count+=1
 
             L_U_sort = tf.ones(self.Rule_num)
             R_L_sort = tf.ones(self.Rule_num)
             for i in range(L_locat+1):
                 L_U_sort=tf.tensor_scatter_nd_update(L_U_sort,tf.constant([[i]]),[L_UU_sort[i]])
+                #print('-*-*-*-*-*+++++++++L_U_sort:',L_U_sort)
             for j in range(L_locat+1,self.Rule_num,1):
                 L_U_sort=tf.tensor_scatter_nd_update(L_U_sort,tf.constant([[j]]),[L_LL_sort[j]])
 
