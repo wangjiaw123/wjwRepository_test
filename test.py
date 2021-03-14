@@ -7,7 +7,7 @@ from SingleT2FLS_Mamdani_modify import *
 import time
 
 
-N=1
+N=10
 train_data_x=np.random.random((N,6))
 train_data_y=np.random.random((N,1))
 val_data_x=np.random.random((N,6))
@@ -44,12 +44,12 @@ print('FLS2.trainable_variables:',FLS2.trainable_variables)
 #print('output_data',output_data)
 
 
-#FLS2.compile(optimizer=tf.keras.optimizers.SGD(0.01),\
-#    loss=tf.keras.losses.binary_crossentropy,\
-#        metrics=['accuracy'])
+# FLS2.compile(optimizer=tf.keras.optimizers.SGD(0.01),\
+#     loss=tf.keras.losses.binary_crossentropy,\
+#         metrics=['accuracy'])
 
 
-#FLS2.fit(train_data_x,train_data_y,batch_size=10,epochs=10)
+#FLS2.fit(train_data_x,train_data_y,batch_size=1,epochs=1)
 #FLS2.fit(trainXY,epochs=10,validation_data=valXY,validation_freq=1)
 
     
