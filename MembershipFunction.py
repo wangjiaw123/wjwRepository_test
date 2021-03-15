@@ -6,10 +6,10 @@ import tensorflow as tf
 def Gausstype2(Xt_gs,GaussT2_parameter):
     Sigma_gs,M1_gs,M2_gs = GaussT2_parameter[0],GaussT2_parameter[1],\
         GaussT2_parameter[2]
-    Sigma_gs=tf.abs(Sigma_gs)+0.00001
+    Sigma_gs=Sigma_gs+0.01
     m1=tf.minimum(M1_gs,M2_gs)    #m1=<m2
     m2=tf.maximum(M1_gs,M2_gs)
-    m_middle=tf.divide(tf.add(m1,m2),2)
+    m_middle=tf.divide(tf.add(m1,m2),2.0)
 
     if (Xt_gs>=m1) and (Xt_gs<=m_middle):
         mu1=tf.constant(1.0,tf.float32)                

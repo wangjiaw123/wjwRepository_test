@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-# @Time    : 2021/3/14
+# @Time    : 2021/3/15
 # @Author  : Wangjiawen
 
 from MembershipFunction import *
@@ -34,7 +34,7 @@ class SingleT2FLS_Mamdani(tf.keras.Model):
         FRB_W = tf.Variable(tf.math.abs(tf.random.get_global_generator().normal(shape=(FRB_ParaNum,))),trainable=True)
         c1 = tf.Variable(tf.abs(tf.random.get_global_generator().normal(shape=(self.Rule_num,))),trainable=True)     #初始化c1
         c2 = tf.Variable(tf.abs(tf.random.get_global_generator().normal(shape=(self.Rule_num,))) \
-                  +c1[tf.argmax(c1,0)]-c1[tf.argmin(c1,0)] ,trainable=True)  #初始化c2
+                  ,trainable=True)  #初始化c2   #+c1[tf.argmax(c1,0)]-c1[tf.argmin(c1,0)] 
         print('***********Initialization of fuzzy rule base parameters completed!*************')
         return FRB_W,FRB_ParaList,c1,c2
 
@@ -96,10 +96,17 @@ class SingleT2FLS_Mamdani(tf.keras.Model):
                 Uu = tf.constant(1.0)
                 Ll = tf.constant(1.0)
                 for k in range(self.Antecedents_num):
-                    locat_num = self.Antecedents_num*j+k
+                    locat_num1 = self.Antecedents_num*j+k                       
+                    #print('locat_num1',locat_num1)
+
                     #隶属函数还可以再添加
                     if self.Init_SetupList[j][k]=='G':
-                        mu_small,mu_big = Gausstype2(input[k],self.FRB_weights[locat_num:locat_num+3])
+                        #mu_small,mu_big = Gausstype2(input[k],self.FRB_weights[locat_num1:locat_num1+3])
+                        if locat_num1 != 0:
+                            locat_num = tf.reduce_sum(self.FRB_parameterNum[0:locat_num1])
+                            mu_small,mu_big = Gausstype2(input[k],self.FRB_weights[locat_num:locat_num+3])                            
+                        else:
+                            mu_small,mu_big = Gausstype2(input[k],self.FRB_weights[0:3])
 
                     #print('-----------mu_big:',mu_big)
                     #print('+++++++++++mu_small:',mu_small)

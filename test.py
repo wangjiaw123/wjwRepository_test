@@ -60,7 +60,7 @@ for i in arange(n_train):
 
 
 AntecedentsNum=4
-data_size=20
+data_size=300
 multiple=1
 X_train=np.zeros([multiple*data_size-3,AntecedentsNum])
 Y_train=np.zeros(multiple*data_size-3)
@@ -113,10 +113,10 @@ print('***********************************')
 #FLS2.fit(train_data_x,train_data_y,batch_size=1,epochs=1)
 #FLS2.fit(trainXY,epochs=10,validation_data=valXY,validation_freq=1)
 
-optimizer=tf.keras.optimizers.Adam(0.01)
+optimizer=tf.keras.optimizers.Adam(learning_rate=0.001)
 mse=tf.keras.losses.mean_squared_error    
 
-epoch = 6
+epoch = 50
 Loss_save = np.zeros(epoch)
 
 for epo in arange(epoch):
@@ -155,11 +155,11 @@ FLS2.save_weights('FLS2_weights.ckpt')    #保存模型参数到FLS2_weights.ckp
 print("*****Saved total model!******")
 
 
-del FLS2
+#del FLS2
 
-FLS2=SingleT2FLS_Mamdani(16,4,LL)
-FLS2.load_weights('FLS2_weights.ckpt')   #恢复模型
-print('**********Test**********',FLS2(X_train))
+#FLS2=SingleT2FLS_Mamdani(16,4,LL)
+#FLS2.load_weights('FLS2_weights.ckpt')   #恢复模型
+#print('**********Test**********',FLS2(X_train))
 
 
 endtime=time.time()
