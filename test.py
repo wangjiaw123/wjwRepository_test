@@ -1,14 +1,16 @@
 
-import tensorflow as tf
-import numpy as np
-from tensorflow.python.keras.backend import arange
-from tensorflow.python.ops.array_ops import zeros
-from SingleT2FLS_Mamdani import *
-#from SingleT2FLS_Mamdani_new import *
-#from SingleT2FLS_Mamdani_modify import *
 import time
 import math
 import matplotlib.pyplot as plt
+import tensorflow as tf
+import numpy as np
+from SingleT2FLS_Mamdani import *
+from tensorflow.python.keras.backend import arange
+from tensorflow.python.ops.array_ops import zeros
+#from SingleT2FLS_Mamdani_new import *
+#from SingleT2FLS_Mamdani_modify import *
+
+
 
 # N=100
 # train_data_x=np.random.random((N,6))
@@ -52,13 +54,13 @@ y,_=Mackey_Glass(N,tao)
 x_star=np.zeros(n_train)
 for i in arange(n_train):
     x_star[i]=y[i+10]
-plt.plot(arange(1,n_train+1,1),x_star)
-plt.show()
+#plt.plot(arange(1,n_train+1,1),x_star)
+#plt.show()
 
 
 
 AntecedentsNum=4
-data_size=100
+data_size=20
 multiple=1
 X_train=np.zeros([multiple*data_size-3,AntecedentsNum])
 Y_train=np.zeros(multiple*data_size-3)
@@ -120,9 +122,10 @@ Loss_save = np.zeros(epoch)
 for epo in arange(epoch):
     with tf.GradientTape() as tape:
         output_data=FLS2(X_train)
-        Loss=mse(output_data,Y_train)/len(Y_train)
+        Loss=mse(output_data,Y_train)#/len(Y_train)
         print('epoch:{0},Loss:{1}'.format(epo+1,Loss))
     grades=tape.gradient(Loss,FLS2.trainable_variables)
+    print('grades:',grades)
     #print('grades',grades)
     #FLS2_trainVariable=FLS2.trainable_variables
     #print('FLS2_trainVariable_old:',FLS2_trainVariable)
@@ -147,6 +150,17 @@ plt.plot(range(1,len(Y_test)+1,1),YY_fls_out_test)
 
 
 plt.show()
+
+FLS2.save_weights('FLS2_weights.ckpt')    #保存模型参数到FLS2_weights.ckpt
+print("*****Saved total model!******")
+
+
+del FLS2
+
+FLS2=SingleT2FLS_Mamdani(16,4,LL)
+FLS2.load_weights('FLS2_weights.ckpt')   #恢复模型
+print('**********Test**********',FLS2(X_train))
+
 
 endtime=time.time()
 dtime=endtime-startime
