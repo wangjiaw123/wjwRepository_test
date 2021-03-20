@@ -4,12 +4,26 @@ import math
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
-from SingleT2FLS_Mamdani import *
+#from SingleT2FLS_Mamdani import *
+# from SingleT2FLS_TSK import *
+from SingleT2FLS_FWA import *
 from tensorflow.python.keras.backend import arange
-from tensorflow.python.ops.array_ops import zeros
+#from tensorflow.python.ops.array_ops import zeros
 #from SingleT2FLS_Mamdani_new import *
 #from SingleT2FLS_Mamdani_modify import *
 
+#model_path='E:\FLS_Tensorflow\新版本\最新版\\mode_FLS.h5'
+
+
+# gpus = tf.config.list_physical_devices("GPU")
+# print(gpus)
+# if gpus:
+#     gpu0 = gpus[0] #如果有多个GPU，仅使用第0个GPU
+#     tf.config.experimental.set_memory_growth(gpu0, True) #设置GPU显存用量按需使用
+#     # 或者也可以设置GPU显存为固定使用量(例如：4G)
+#     #tf.config.experimental.set_virtual_device_configuration(gpu0,
+#     #    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=4096)]) 
+#     tf.config.set_visible_devices([gpu0],"GPU")
 
 
 # N=100
@@ -60,7 +74,7 @@ for i in arange(n_train):
 
 
 AntecedentsNum=4
-data_size=300
+data_size=200
 multiple=1
 X_train=np.zeros([multiple*data_size-3,AntecedentsNum])
 Y_train=np.zeros(multiple*data_size-3)
@@ -91,7 +105,9 @@ LL=[['G','G','G','G','G','G'],['G','G','G','G','G','G'],
 
 
 startime=time.time()
-FLS2=SingleT2FLS_Mamdani(16,4,LL)
+# FLS2=SingleT2FLS_Mamdani(16,4,LL)
+# FLS2=SingleT2FLS_TSK(8,4,LL)
+FLS2=SingleT2FLS_FWA(8,4,LL)
 print('***********************************')
 print('FLS2.variables',FLS2.variables)
 print('***********************************')
@@ -113,10 +129,10 @@ print('***********************************')
 #FLS2.fit(train_data_x,train_data_y,batch_size=1,epochs=1)
 #FLS2.fit(trainXY,epochs=10,validation_data=valXY,validation_freq=1)
 
-optimizer=tf.keras.optimizers.Adam(learning_rate=0.001)
+optimizer=tf.keras.optimizers.Adam(0.5)  # (Mamdani-SGD-1.5,TSK-Adam-1)
 mse=tf.keras.losses.mean_squared_error    
 
-epoch = 50
+epoch = 20
 Loss_save = np.zeros(epoch)
 
 for epo in arange(epoch):
@@ -134,6 +150,8 @@ for epo in arange(epoch):
     #print('FLS2_trainVariable_new:',FLS2.trainable_variables)
     Loss_save[epo]=tf.reduce_sum(Loss).numpy()
     #print('FLS2_trainVariable_new:',FLS2.trainable_variables[0]-FLS2_trainVariable[0])
+#model.save(filepath=model_path)
+
 plt.subplot(1,3,1)
 plt.plot(range(1,epoch+1,1),Loss_save)
 
@@ -149,10 +167,15 @@ plt.plot(range(1,len(Y_test)+1,1),YY_fls_out_test)
 
 
 
+endtime=time.time()
+dtime=endtime-startime
+print('Totial time:%.8f'%dtime)
+
+
 plt.show()
 
-FLS2.save_weights('FLS2_weights.ckpt')    #保存模型参数到FLS2_weights.ckpt
-print("*****Saved total model!******")
+#FLS2.save_weights('FLS2_weights.ckpt')    #保存模型参数到FLS2_weights.ckpt
+#print("*****Saved total model!******")
 
 
 #del FLS2
@@ -161,9 +184,3 @@ print("*****Saved total model!******")
 #FLS2.load_weights('FLS2_weights.ckpt')   #恢复模型
 #print('**********Test**********',FLS2(X_train))
 
-
-endtime=time.time()
-dtime=endtime-startime
-
-
-print('Totial time:%.8f'%dtime)
