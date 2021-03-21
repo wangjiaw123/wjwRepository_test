@@ -58,6 +58,7 @@ def SingleT2FLS_TrainFun(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrai
         for Block_id in range(Block_size):
             with tf.GradientTape() as tape:
                 output_data=Mode(Xtrain[Block_id*Block_size:Block_id*Block_size+batchSIZE,:])
+                #print('output_data',output_data)
                 Loss=lossFunction(output_data,Ytrain[Block_id*Block_size:Block_id*Block_size+batchSIZE])
             grades=tape.gradient(Loss,Mode.trainable_variables)
             optimizer.apply_gradients(zip(grades,Mode.trainable_variables))

@@ -53,26 +53,30 @@ class SingleT2FLS_FWA(tf.keras.Model):
     def GetFRB_weights(self):
         return self.FRB_weights,self.W_m,self.W_s,self.B_m,self.B_s
 
-    def Compute_LeftPoint(self,c1,UU,LL):    
+    def Compute_LeftPoint(self,c1,UU,LL,n):   
+        #print('<<<<<<<<<<<<')
         c1_sort = tf.sort(c1,direction='ASCENDING')
         c1_index = tf.argsort(c1,direction='ASCENDING')
+        #print('c1_index,UU,LL',c1_index,UU,LL)
         UU_sort = tf.gather(UU,c1_index)
+        #print('*****************',UU,c1_index)
         LL_sort = tf.gather(LL,c1_index)
         l_out = 0
         s = 0
         s1 = 0
         b2=c1_sort
+        #print('<<<<<<<<<<<<')
         s = tf.reduce_sum(tf.multiply(b2,LL_sort))
         s1 = tf.reduce_sum(LL_sort)
         l_out=s/s1
-        for i in range(self.Rule_num):
+        for i in range(n):
             s += b2[i]*(UU_sort[i]-LL_sort[i])
             s1 += UU_sort[i]-LL_sort[i]
             l_out = tf.minimum(l_out,s/s1)
 
         return l_out
 
-    def Compute_RightPoint(self,c2,UU,LL):
+    def Compute_RightPoint(self,c2,UU,LL,n):
         c2_sort = tf.sort(c2,direction='ASCENDING')
         c2_index = tf.argsort(c2,direction='ASCENDING')
         UU_sort = tf.gather(UU,c2_index)
@@ -84,23 +88,24 @@ class SingleT2FLS_FWA(tf.keras.Model):
         s = tf.reduce_sum(tf.multiply(b1,UU_sort))
         s1 = tf.reduce_sum(UU_sort)
         r_out=s/s1
-        for i in range(self.Rule_num):
+        for i in range(n):
             s += b1[i]*(LL_sort[i]-UU_sort[i])
             s1 += LL_sort[i]-UU_sort[i]
             r_out = tf.maximum(r_out,s/s1)
 
         return r_out
 
-    def Post_output_y(self,UU,LL):
-        y_small = tf.zeros(self.Rule_num)
-        y_big = tf.ones(self.Rule_num)
-        for k in range(self.Rule_num):
-            y_small=tf.tensor_scatter_nd_update(y_small,tf.constant([[k]]),\
-                [self.Compute_LeftPoint(LL,self.W_m[k,:]+self.W_s[k,:],\
-                    self.W_m[k,:]-self.W_s[k,:])+self.B_m[k]+self.B_s[k]])
-            y_big=tf.tensor_scatter_nd_update(y_big,tf.constant([[k]]),\
-                [self.Compute_LeftPoint(UU,self.W_m[k,:]+self.W_s[k,:],\
-                    self.W_m[k,:]-self.W_s[k,:])+self.B_m[k]-self.B_s[k]])  
+    def Post_output_y(self,UU,LL,k):
+        y_small = tf.constant(0)
+        y_big = tf.constant(0)    
+        #print('>>>****************************************************************')
+        #print('k',k,LL,self.W_m[k,:]+self.W_s[k,:],self.W_m[k,:]-self.W_s[k,:])
+        y_small=self.Compute_LeftPoint(LL,self.W_m[k,:]+self.W_s[k,:],\
+                    self.W_m[k,:]-self.W_s[k,:],self.Antecedents_num)+self.B_m[k]+self.B_s[k]
+        #print('y_small',y_small)
+        y_big=self.Compute_RightPoint(UU,self.W_m[k,:]+self.W_s[k,:],\
+                    self.W_m[k,:]-self.W_s[k,:],self.Antecedents_num)+self.B_m[k]-self.B_s[k] 
+        #print('>>****************************************************************')
         return y_small,y_big                  
  
     def call(self,input_data):
@@ -114,11 +119,16 @@ class SingleT2FLS_FWA(tf.keras.Model):
         for sample_i in range(samples_num):
             input = input_data[sample_i] 
             #print('**//////** Number {},input(Sample):{}'.format(sample_i,input)) 
-            UU=np.ones(self.Rule_num)
-            LL=np.ones(self.Rule_num)
+            UU=tf.ones(self.Rule_num)
+            LL=tf.ones(self.Rule_num)
+            y_small=tf.ones(self.Rule_num)
+            y_big=tf.ones(self.Rule_num)
+
             for j in range(self.Rule_num):
                 Uu = tf.constant(1.0)
                 Ll = tf.constant(1.0) 
+                Uuu=tf.ones(self.Antecedents_num)
+                Lll=tf.ones(self.Antecedents_num)
                 for k in range(self.Antecedents_num):
                     locat_num = self.Antecedents_num*j+k
                     #隶属函数还可以再添加
@@ -127,21 +137,29 @@ class SingleT2FLS_FWA(tf.keras.Model):
                         #print('mu_small,mu_big',mu_small,mu_big)
                     Uu *= mu_big
                     Ll *= mu_small
-
+                    Uuu=tf.tensor_scatter_nd_update(Uuu,tf.constant([[k]]),[mu_big])
+                    Lll=tf.tensor_scatter_nd_update(Lll,tf.constant([[k]]),[mu_small])
                 #print('Uu,Ll:',Uu,Ll)
                 #print('Uu.shape:',tf.shape(Uu))
+                y_small0,y_big0=self.Post_output_y(Uuu,Lll,j)
+                #print('y_small0,y_big0',y_small0,y_big0)
+                y_small=tf.tensor_scatter_nd_update(y_small,tf.constant([[j]]),[y_small0])
+                y_big=tf.tensor_scatter_nd_update(y_big,tf.constant([[j]]),[y_big0])
+                #print('+++++++++',y_big,y_small)
+
                 UU=tf.tensor_scatter_nd_update(UU,tf.constant([[j]]),[Uu])
                 LL=tf.tensor_scatter_nd_update(LL,tf.constant([[j]]),[Ll])
                 UU=tf.cast(UU,dtype=tf.float32)
                 LL=tf.cast(LL,dtype=tf.float32)
             #print('+++++//////////+++++++UU,LL:',UU,LL)
             #################
-            y_small,y_big=self.Post_output_y(UU,LL)
+            
+            #print('y_small,y_big',y_small,y_big)
 
             Output_Left=tf.tensor_scatter_nd_update(Output_Left,tf.constant([[sample_i]]),\
-                [self.Compute_LeftPoint(y_small,UU,LL)])
+                [self.Compute_LeftPoint(y_small,UU,LL,self.Rule_num)])
             Output_Right=tf.tensor_scatter_nd_update(Output_Right,tf.constant([[sample_i]]),\
-                [self.Compute_RightPoint(y_big,UU,LL)])
+                [self.Compute_RightPoint(y_big,UU,LL,self.Rule_num)])
 
             #Output_Left[sample_i]=self.Compute_LeftPoint(UU,LL)
             #Output_Right[sample_i]=self.Compute_RightPoint(UU,LL)
