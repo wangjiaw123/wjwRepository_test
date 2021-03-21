@@ -42,7 +42,7 @@ for i in range(n_train):
 
 
 AntecedentsNum=4
-data_size=200
+data_size=500
 multiple=3
 X_train=np.zeros([multiple*data_size-3,AntecedentsNum])
 Y_train=np.zeros(multiple*data_size-3)
@@ -69,11 +69,19 @@ LL=[['G','G','G','G','G','G'],['G','G','G','G','G','G'],
     ['G','G','G','G','G','G'],['G','G','G','G','G','G'],
     ['G','G','G','G','G','G'],['G','G','G','G','G','G'],
     ['G','G','G','G','G','G'],['G','G','G','G','G','G'],
+    ['G','G','G','G','G','G'],['G','G','G','G','G','G'],
+    ['G','G','G','G','G','G'],['G','G','G','G','G','G'],
+    ['G','G','G','G','G','G'],['G','G','G','G','G','G'],
+    ['G','G','G','G','G','G'],['G','G','G','G','G','G'],
+    ['G','G','G','G','G','G'],['G','G','G','G','G','G'],  
+    ['G','G','G','G','G','G'],['G','G','G','G','G','G'],
+    ['G','G','G','G','G','G'],['G','G','G','G','G','G'],
+    ['G','G','G','G','G','G'],['G','G','G','G','G','G'],
     ['G','G','G','G','G','G'],['G','G','G','G','G','G']]
 
-SingleT2FLS_TrainFun(16,4,LL,X_train,Y_train,X_test,Y_test,modeName='Mamdani',predictMode=False,\
-    validationRatio=0.1,XvalidationSet=None,YvalidationSet=None,\
-    optimizer=tf.keras.optimizers.Adam(0.5),lossFunction=tf.keras.losses.mean_squared_error,\
+SingleT2FLS_TrainFun(32,4,LL,X_train,Y_train,X_test,Ypredict=Y_test,modeName='TSK',predictMode=False,\
+    validationRatio=0.2,XvalidationSet=None,YvalidationSet=None,\
+    optimizer=tf.keras.optimizers.Adam(0.01),lossFunction=tf.keras.losses.mean_squared_error,\
     batchSIZE=64,epoch=20,useGPU=False,saveMode=False,outputModeName=None,modeSavePath=None)
 
 # SingleT2FLS_TrainFun(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrain,Xpredict,Ypredict,\

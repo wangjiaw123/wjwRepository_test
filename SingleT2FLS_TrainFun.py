@@ -15,7 +15,7 @@ from SingleT2FLS_TSK import *
 from SingleT2FLS_FWA import *
 
 
-def SingleT2FLS_TrainFun(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrain,Xpredict,Ypredict,\
+def SingleT2FLS_TrainFun(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrain,Xpredict,Ypredict=None,\
     modeName='Mamdani',predictMode=True,validationRatio=0.1,XvalidationSet=None,YvalidationSet=None,\
     optimizer=tf.keras.optimizers.Adam(0.5),lossFunction=tf.keras.losses.mean_squared_error,\
     batchSIZE=1,epoch=5,useGPU=False,saveMode=False,outputModeName=None,modeSavePath=None):
@@ -62,7 +62,7 @@ def SingleT2FLS_TrainFun(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrai
             grades=tape.gradient(Loss,Mode.trainable_variables)
             optimizer.apply_gradients(zip(grades,Mode.trainable_variables))
             saveloss+=tf.reduce_sum(Loss).numpy()
-            print('>>>>>>>>>> epoch:{}/{},block_id:{},block_size:{},block loss:{}'.format(epoch_id+1,epoch,Block_id+1,Block_size,Loss))
+            print('>>>>>>>>>> epoch:{}/{},block_id:{},block_size:{},block_loss:{}'.format(epoch_id+1,epoch,Block_id+1,Block_size,Loss))
             #print('**********grades:',grades)
         Loss_save[epoch_id]=saveloss
         if validationRatio and (epoch_id == 0):
@@ -70,7 +70,7 @@ def SingleT2FLS_TrainFun(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrai
             YvalidationSet=Ytrain[validation_sample_id]
         output_data_validat=Mode(XvalidationSet)
         Loss_validat=lossFunction(output_data_validat,YvalidationSet)
-        print('>>> epoch:{}/{},Loss:{},Loss_validat:{}'.format(epoch_id+1,epoch,Loss,Loss_validat))
+        print('epoch:{}/{},Loss:{},Loss_validat:{}'.format(epoch_id+1,epoch,Loss,Loss_validat))
     
     endtime=time.time()
     dtime=endtime-startime
@@ -97,7 +97,9 @@ def SingleT2FLS_TrainFun(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrai
         outputPredict=Mode(Xpredict)
         return outputPredict
     else:
-        outputPredict=Mode(Xpredict)    
+        outputPredict=Mode(Xpredict)   
+        Loss_predict=lossFunction(Ypredict,outputPredict)
+        print('Predict Mode,the predict loss:{}'.format(Loss_predict))
         plt.figure()
         plt.plot(range(len(Xpredict)),Ypredict)
         plt.plot(range(len(Xpredict)),outputPredict)
