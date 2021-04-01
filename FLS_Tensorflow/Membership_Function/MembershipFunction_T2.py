@@ -1,12 +1,14 @@
-
-
+#/usr/bin/python3
+# -*- coding: utf-8 -*-
+# @Time    : 2021/3/15
+# @Author  : Wangjiawen
 
 import tensorflow as tf
 
 def Gausstype2(Xt_gs,GaussT2_parameter):
     Sigma_gs,M1_gs,M2_gs = GaussT2_parameter[0],GaussT2_parameter[1],\
         GaussT2_parameter[2]
-    Sigma_gs=Sigma_gs+0.01
+    Sigma_gs=Sigma_gs+0.0001
     m1=tf.minimum(M1_gs,M2_gs)    #m1=<m2
     m2=tf.maximum(M1_gs,M2_gs)
     m_middle=tf.divide(tf.add(m1,m2),2.0)

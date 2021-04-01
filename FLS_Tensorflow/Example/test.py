@@ -4,9 +4,11 @@ import math
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
-#from SingleT2FLS_Mamdani import *
-# from SingleT2FLS_TSK import *
-from SingleT2FLS_FWA import *
+import sys
+sys.path.append("..")
+from ST2FLS.SingleT2FLS_Mamdani import *
+from ST2FLS.SingleT2FLS_TSK import *
+from ST2FLS.SingleT2FLS_FWA import *
 from tensorflow.python.keras.backend import arange
 #from tensorflow.python.ops.array_ops import zeros
 #from SingleT2FLS_Mamdani_new import *
@@ -74,7 +76,7 @@ for i in arange(n_train):
 
 
 AntecedentsNum=4
-data_size=200
+data_size=50
 multiple=1
 X_train=np.zeros([multiple*data_size-3,AntecedentsNum])
 Y_train=np.zeros(multiple*data_size-3)

@@ -1,7 +1,10 @@
+
+import sys
+sys.path.append("..")
 import math
 import numpy as np
 import tensorflow as tf
-from SingleT2FLS_TrainFun import SingleT2FLS_TrainFun
+from Train.SingleT2FLS_TrainFun import SingleT2FLS_TrainFun
 
 def DF(x):
     a=0.2
@@ -42,8 +45,8 @@ for i in range(n_train):
 
 
 AntecedentsNum=4
-data_size=500
-multiple=3
+data_size=100
+multiple=2
 X_train=np.zeros([multiple*data_size-3,AntecedentsNum])
 Y_train=np.zeros(multiple*data_size-3)
 X_test=np.zeros([data_size-3,AntecedentsNum])
@@ -79,12 +82,12 @@ LL=[['G','G','G','G','G','G'],['G','G','G','G','G','G'],
     ['G','G','G','G','G','G'],['G','G','G','G','G','G'],
     ['G','G','G','G','G','G'],['G','G','G','G','G','G']]
 
-SingleT2FLS_TrainFun(32,4,LL,X_train,Y_train,X_test,Ypredict=Y_test,modeName='FWA',predictMode=False,\
+SingleT2FLS_TrainFun(24,4,LL,X_train,Y_train,X_test,Ypredict=Y_test,modeName='TSK',modeType=1,predictMode=False,\
     validationRatio=0.2,XvalidationSet=None,YvalidationSet=None,\
-    optimizer=tf.keras.optimizers.Adam(0.01),lossFunction=tf.keras.losses.mean_squared_error,\
-    batchSIZE=64,epoch=20,useGPU=False,saveMode=False,outputModeName=None,modeSavePath=None)
+    optimizer=tf.keras.optimizers.Adam(0.1),lossFunction=tf.keras.losses.mean_squared_error,\
+    batchSIZE=32,epoch=10,useGPU=False,saveMode=False,outputModeName=None,modeSavePath=None)
 
 # SingleT2FLS_TrainFun(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrain,Xpredict,Ypredict,\
-#     modeName='Mamdani',predictMode=True,validationRatio=0.1,XvalidationSet=None,YvalidationSet=None,\
+#     modeName='Mamdani',modeType=2,predictMode=True,validationRatio=0.1,XvalidationSet=None,YvalidationSet=None,\
 #     optimizer=tf.keras.optimizers.Adam(0.5),lossFunction=tf.keras.losses.mean_squared_error,\
 #     batchSIZE=1,epoch=5,useGPU=False,saveMode=False,outputModeName=None,modeSavePath=None)    

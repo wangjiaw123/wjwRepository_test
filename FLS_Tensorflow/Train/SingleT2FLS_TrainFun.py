@@ -3,6 +3,9 @@
 # @Time    : 2021/3/20
 # @Author  : Wangjiawen
 
+import sys
+sys.path.append('../ST2FLS/')
+
 import time
 import random
 import matplotlib.pyplot as plt
@@ -10,13 +13,16 @@ import tensorflow as tf
 import numpy as np
 from tensorflow.python.eager.backprop import GradientTape
 from tensorflow.python.ops.functional_ops import Gradient
-from SingleT2FLS_Mamdani import *
-from SingleT2FLS_TSK import *
-from SingleT2FLS_FWA import *
-
+#导入2型FLS系统
+from ST2FLS.SingleT2FLS_Mamdani import *
+from ST2FLS.SingleT2FLS_TSK import *
+from ST2FLS.SingleT2FLS_FWA import *
+#导入1型FLS系统
+from ST1FLS.SingleT1FLS_Mamdani import *
+from ST1FLS.SingleT1FLS_TSK import *
 
 def SingleT2FLS_TrainFun(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrain,Xpredict,Ypredict=None,\
-    modeName='Mamdani',predictMode=True,validationRatio=0.1,XvalidationSet=None,YvalidationSet=None,\
+    modeName='Mamdani',modeType=2,predictMode=True,validationRatio=0.1,XvalidationSet=None,YvalidationSet=None,\
     optimizer=tf.keras.optimizers.Adam(0.5),lossFunction=tf.keras.losses.mean_squared_error,\
     batchSIZE=1,epoch=5,useGPU=False,saveMode=False,outputModeName=None,modeSavePath=None):
 
@@ -38,7 +44,7 @@ def SingleT2FLS_TrainFun(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrai
             #    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=4096)]) 
             tf.config.set_visible_devices([gpu0],"GPU")
 
-    Mode_Name='SingleT2FLS_'+modeName
+    Mode_Name='SingleT'+str(modeType)+'FLS_'+modeName
     Mode=eval(Mode_Name+str((Rule_num,Antecedents_num,InitialSetup_List)))
 
     print('******************************************************************')
