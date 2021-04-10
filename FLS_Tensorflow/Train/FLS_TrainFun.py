@@ -21,9 +21,9 @@ from ST2FLS.SingleT2FLS_FWA import *
 from ST1FLS.SingleT1FLS_Mamdani import *
 from ST1FLS.SingleT1FLS_TSK import *
 
-def SingleT2FLS_TrainFun(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrain,Xpredict,Ypredict=None,\
+def FLS_TrainFun(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrain,Xpredict,Ypredict=None,\
     modeName='Mamdani',modeType=2,predictMode=True,validationRatio=0.1,XvalidationSet=None,YvalidationSet=None,\
-    optimizer=tf.keras.optimizers.Adam(0.5),lossFunction=tf.keras.losses.mean_squared_error,\
+    optimizer=tf.keras.optimizers.Adam(0.05),lossFunction=tf.keras.losses.mean_squared_error,\
     batchSIZE=1,epoch=5,useGPU=False,saveMode=False,outputModeName=None,modeSavePath=None):
 
     '''
@@ -59,6 +59,7 @@ def SingleT2FLS_TrainFun(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrai
     validation_sample_id=random.sample(range(0,(len(Xtrain)-len(Xtrain)%batchSIZE)),int(len(Xtrain)*validationRatio))
 
     Loss_save = np.zeros(epoch)
+    Loss_validat = np.zeros(epoch)
     for epoch_id in range(epoch):
         saveloss=0.0
         for Block_id in range(Block_size):
@@ -76,8 +77,8 @@ def SingleT2FLS_TrainFun(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrai
             XvalidationSet=Xtrain[validation_sample_id,:]
             YvalidationSet=Ytrain[validation_sample_id]
         output_data_validat=Mode(XvalidationSet)
-        Loss_validat=lossFunction(output_data_validat,YvalidationSet)
-        print('epoch:{}/{},Loss:{},Loss_validat:{}'.format(epoch_id+1,epoch,Loss,Loss_validat))
+        Loss_validat[epoch_id]=lossFunction(output_data_validat,YvalidationSet)
+        print('epoch:{}/{},Loss:{},Loss_validat:{}'.format(epoch_id+1,epoch,Loss,Loss_validat[epoch_id]))
     
     endtime=time.time()
     dtime=endtime-startime
@@ -87,18 +88,23 @@ def SingleT2FLS_TrainFun(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrai
     if saveMode:
         Mode.save(filepath=modeSavePath+'\\'+outputModeName)
     plt.figure()
-    plt.plot(range(epoch),Loss_save)
+    plt.plot(np.linspace(1,epoch,epoch,dtype=int),Loss_save)
     plt.xlabel('epoch')
-    plt.ylabel('RMSE')
-    #plt.title('RMSE and epoch')
+    plt.ylabel('RMSE(Train)')
+    #plt.title('RMSE(Train)')
+
+    plt.figure()
+    plt.plot(np.linspace(1,epoch,epoch,dtype=int),Loss_validat)
+    plt.xlabel('epoch')
+    plt.ylabel('Validat RMSE(Train)')
 
     outputTrain=Mode(Xtrain)
     plt.figure()
-    plt.plot(range(len(Xtrain)),Ytrain)
-    plt.plot(range(len(Xtrain)),outputTrain)
+    plt.plot(np.linspace(1,len(Xtrain),len(Xtrain)),Ytrain)
+    plt.plot(np.linspace(1,len(Xtrain),len(Xtrain)),outputTrain)
     plt.xlabel('t')
     plt.ylabel('y')
-    plt.title('Real and predict (train)')    
+    plt.title('Real and predict(train)')    
 
     if predictMode:
         outputPredict=Mode(Xpredict)
@@ -108,11 +114,11 @@ def SingleT2FLS_TrainFun(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrai
         Loss_predict=lossFunction(Ypredict,outputPredict)
         print('Predict Mode,the predict loss:{}'.format(Loss_predict))
         plt.figure()
-        plt.plot(range(len(Xpredict)),Ypredict)
-        plt.plot(range(len(Xpredict)),outputPredict)
+        plt.plot(np.linspace(len(Xtrain)+1,len(Xpredict)+len(Xtrain)+1,len(Xpredict)),Ypredict)
+        plt.plot(np.linspace(len(Xtrain)+1,len(Xpredict)+len(Xtrain)+1,len(Xpredict)),outputPredict)
         plt.xlabel('t')
         plt.ylabel('y')
-        plt.title('Real and predict (predict)') 
+        plt.title('Real and predict(predict)') 
     
     
     plt.show()

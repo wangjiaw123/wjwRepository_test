@@ -87,11 +87,8 @@ class SingleT2FLS_Mamdani(tf.keras.Model):
     def call(self,input_data):
         #tf.keras.backend.set_floatx('float64')
         samples_num = input_data.shape[0]
-        #Output_Left=tf.Variable(tf.zeros((samples_num,)))
-        #Output_Right=tf.Variable(tf.zeros((samples_num,)))
         Output_Left=tf.ones(samples_num)
         Output_Right=tf.ones(samples_num)
-
         for sample_i in range(samples_num):
             input = input_data[sample_i] 
             #print('**//////** Number {},input(Sample):{}'.format(sample_i,input)) 
@@ -102,29 +99,18 @@ class SingleT2FLS_Mamdani(tf.keras.Model):
                 Ll = tf.constant(1.0) 
                 for k in range(self.Antecedents_num):
                     locat_num = self.Antecedents_num*j+k
-                    #隶属函数还可以再添加
                     if self.Init_SetupList[j][k]=='G':
                         mu_small,mu_big = Gausstype2(input[k],self.FRB_weights[locat_num:locat_num+3])
-                        #print('mu_small,mu_big',mu_small,mu_big)
                     Uu *= mu_big
                     Ll *= mu_small
-
-                #print('Uu,Ll:',Uu,Ll)
-                #print('Uu.shape:',tf.shape(Uu))
                 UU=tf.tensor_scatter_nd_update(UU,tf.constant([[j]]),[Uu])
                 LL=tf.tensor_scatter_nd_update(LL,tf.constant([[j]]),[Ll])
                 UU=tf.cast(UU,dtype=tf.float32)
                 LL=tf.cast(LL,dtype=tf.float32)
-            #print('+++++//////////+++++++UU,LL:',UU,LL)
-
             Output_Left=tf.tensor_scatter_nd_update(Output_Left,tf.constant([[sample_i]]),\
                 [self.Compute_LeftPoint(UU,LL)])
             Output_Right=tf.tensor_scatter_nd_update(Output_Right,tf.constant([[sample_i]]),\
                 [self.Compute_RightPoint(UU,LL)])
-
-            #Output_Left[sample_i]=self.Compute_LeftPoint(UU,LL)
-            #Output_Right[sample_i]=self.Compute_RightPoint(UU,LL)
-        #Output = tf.divide(tf.add(Output_Left,Output_Right),2.0)
         Output = (Output_Right+Output_Left)/2.0
         #print('Output:',Output)
         return Output
