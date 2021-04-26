@@ -4,7 +4,7 @@
 # @Author  : Wangjiawen
 
 import sys
-sys.path.append('../ST2FLS/')
+sys.path.append('..')
 
 import time
 import random
@@ -56,7 +56,12 @@ def FLS_TrainFun(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrain,Xpredi
     if len(Xtrain)<batchSIZE:
         print('Warning! The number of training data must be greater than the number of batches!')
     Block_size=len(Xtrain)//batchSIZE
+
     validation_sample_id=random.sample(range(0,(len(Xtrain)-len(Xtrain)%batchSIZE)),int(len(Xtrain)*validationRatio))
+    
+    if (XvalidationSet == None) and (YvalidationSet == None):
+        XvalidationSet=Xtrain[validation_sample_id,:]
+        YvalidationSet=Ytrain[validation_sample_id]
 
     Loss_save = np.zeros(epoch)
     Loss_validat = np.zeros(epoch)
@@ -64,18 +69,17 @@ def FLS_TrainFun(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrain,Xpredi
         saveloss=0.0
         for Block_id in range(Block_size):
             with tf.GradientTape() as tape:
-                output_data=Mode(Xtrain[Block_id*Block_size:Block_id*Block_size+batchSIZE,:])
+                #print('--------------',Xtrain[Block_id*batchSIZE:Block_id*batchSIZE+batchSIZE,:])
+                output_data=Mode(Xtrain[Block_id*batchSIZE:Block_id*batchSIZE+batchSIZE,:])
                 #print('output_data',output_data)
-                Loss=lossFunction(output_data,Ytrain[Block_id*Block_size:Block_id*Block_size+batchSIZE])
+                Loss=lossFunction(output_data,Ytrain[Block_id*batchSIZE:Block_id*batchSIZE+batchSIZE])
             grades=tape.gradient(Loss,Mode.trainable_variables)
             optimizer.apply_gradients(zip(grades,Mode.trainable_variables))
             saveloss+=tf.reduce_sum(Loss).numpy()
             print('>>>>>>>>>> epoch:{}/{},block_id:{},block_size:{},block_loss:{}'.format(epoch_id+1,epoch,Block_id+1,Block_size,Loss))
             #print('**********grades:',grades)
         Loss_save[epoch_id]=saveloss
-        if validationRatio and (epoch_id == 0):
-            XvalidationSet=Xtrain[validation_sample_id,:]
-            YvalidationSet=Ytrain[validation_sample_id]
+
         output_data_validat=Mode(XvalidationSet)
         Loss_validat[epoch_id]=lossFunction(output_data_validat,YvalidationSet)
         print('epoch:{}/{},Loss:{},Loss_validat:{}'.format(epoch_id+1,epoch,Loss,Loss_validat[epoch_id]))

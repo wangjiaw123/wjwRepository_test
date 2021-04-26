@@ -53,7 +53,7 @@ class SingleT1FLS_Mamdani(tf.keras.Model):
                 else:         # self.Init_SetupList[i][j] == 'Gauss1':
                     FRB_ParaList.append(2)
                     FRB_ParaNum +=2
-
+        #print('<<<<<<<<<<<<<<<<<<<',FRB_ParaList,FRB_ParaNum)
         FRB_W = tf.Variable(tf.math.abs(tf.random.get_global_generator().normal(shape=(FRB_ParaNum,))),trainable=True)
         c1 = tf.Variable(tf.abs(tf.random.get_global_generator().normal(shape=(self.Rule_num,))),trainable=True)     #初始化c1
 
@@ -111,6 +111,7 @@ class SingleT1FLS_Mamdani(tf.keras.Model):
                         u_help = Trapmf(input[k],self.FRB_weights[locat_num:locat_num+4])
                     elif self.Init_SetupList[i][k] == 'Tri':
                         u_help = Trimf(input[k],self.FRB_weights[locat_num:locat_num+3])
+                        #print('****Tri:u_help',u_help)
                     elif self.Init_SetupList[i][k] == 'Sig':
                         u_help = Sigmf(input[k],self.FRB_weights[locat_num:locat_num+2])
                     elif self.Init_SetupList[i][k] == 'Gbell':
@@ -122,7 +123,8 @@ class SingleT1FLS_Mamdani(tf.keras.Model):
                     else:         # self.Init_SetupList[i][j] == 'Gauss1':
                         u_help = Gauss1mf(input[k],self.FRB_weights[locat_num:locat_num+2])                
                     uu*=u_help
-                UU=tf.tensor_scatter_nd_update(UU,tf.constant([[i]]),[uu])    
+                UU=tf.tensor_scatter_nd_update(UU,tf.constant([[i]]),[uu]) 
+                #print('*******UU:',UU)   
             Output = tf.tensor_scatter_nd_update(Output,tf.constant([[sample_i]]), 
                 [tf.reduce_sum(tf.multiply(UU,self.c1)/tf.reduce_sum(UU))])       
         return Output

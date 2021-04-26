@@ -30,16 +30,17 @@ def Trapmf(x,TrapmfT1_parameter):     #梯形隶属函数,4个参数
     elif c<x<=d:
         return (d-x)/(d-c)
     else:
-        return 0
+        return 0.001
     
 def Trimf(x,TrimfT1_parameter):       #三角形隶属函数,3个参数
+    TrimfT1_parameter = tf.sort(TrimfT1_parameter,direction='ASCENDING')
     a,b,c = TrimfT1_parameter[0],TrimfT1_parameter[1],TrimfT1_parameter[2]
     if a<=x<=b:
         return (x-a)/(b-a)
     elif b<x<=c:
         return (c-x)/(c-b)
     else:
-        return 0
+        return 0.001
 
 def Sigmf(x,SigmfT1_parameter):       #Sigmf隶属函数,2个参数
     a,c=SigmfT1_parameter[0],SigmfT1_parameter[1]
