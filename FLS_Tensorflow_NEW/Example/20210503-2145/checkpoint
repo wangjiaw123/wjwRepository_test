@@ -1,0 +1,2 @@
+model_checkpoint_path: "SingleT1FLS_Mamdani.ckpt"
+all_model_checkpoint_paths: "SingleT1FLS_Mamdani.ckpt"
