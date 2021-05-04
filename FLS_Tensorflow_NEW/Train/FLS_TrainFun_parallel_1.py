@@ -1,6 +1,6 @@
 #/usr/bin/python3
 # -*- coding: utf-8 -*-
-# @Time    : 2021/5/3
+# @Time    : 2021/5/4
 # @Author  : Wangjiawen
 
 # Note : Parallel algorithm must be run on Linux system.
@@ -62,7 +62,7 @@ def SubMode_train(MODE,lossFunction,Xtrain_subMode,Ytrain_subMode,batch_size,que
 def FLS_TrainFun_parallel_1(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrain,Xpredict,Ypredict=None,\
     modeName='Mamdani',modeType=2,predictMode=True,validationRatio=0.1,XvalidationSet=None,YvalidationSet=None,\
     optimizer=tf.keras.optimizers.Adam(0.05),lossFunction=tf.keras.losses.mean_squared_error,\
-    batchSIZE=1,epoch=5,subMode_learningRate=tf.constant(0.01),useGPU=False,processesNum=None):
+    batchSIZE=1,epoch=5,subMode_learningRate=tf.constant(0.01),useGPU=False,processesNum=None,RMSE_threshold=None):
 
     '''
     Rule_num:规则数量,Antecedents_num:前件数量,InitialSetup_List:模糊规则初始化列表
@@ -109,7 +109,7 @@ def FLS_TrainFun_parallel_1(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Yt
 
     Loss_save = np.zeros(epoch)
     Loss_validat = np.zeros(epoch)
-
+    RMSE_threshold_count = 0
     for epoch_id in range(epoch):
         print('>>>>>>>>>>>>>>>>>>>>>>>epoch:{}/{}<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(epoch_id+1,epoch))
         Epoch_sample_id=random.sample(range(0,len(Xtrain)),len(Xtrain))
@@ -158,7 +158,15 @@ def FLS_TrainFun_parallel_1(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Yt
 
         output_data_validat=Mode(XvalidationSet)
         Loss_validat[epoch_id]=tf.sqrt(lossFunction(output_data_validat,YvalidationSet))
-        print('epoch:{}/{},Loss:{},Loss_validat:{}'.format(epoch_id+1,epoch,saveloss,Loss_validat[epoch_id]))
+        print('epoch:{}/{},loss:{},loss_validat:{}'.format(epoch_id+1,epoch,saveloss,Loss_validat[epoch_id]))
+
+        # 3次小于阈值则结束
+        if RMSE_threshold and Loss_save[epoch_id] < RMSE_threshold:
+            RMSE_threshold_count += 1
+        if RMSE_threshold and RMSE_threshold_count>=3:
+            epoch = epoch_id
+            break
+            
 
     endtime=time.time()
     dtime=endtime-startime
