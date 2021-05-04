@@ -44,6 +44,10 @@ class SingleT2FLS_TSK(tf.keras.Model):
         print('***********Initialization of fuzzy rule base parameters completed!*************')
         return FRB_W,FRB_ParaList,C,S
 
+    def Setting_parameters(self,Grades_set):
+        self.FRB_weights.assign(Grades_set[0])
+        self.C.assign(Grades_set[1])
+        self.S.assign(Grades_set[2])
 
     def GetFRB_weights(self):
         return self.FRB_weights,self.C,self.S

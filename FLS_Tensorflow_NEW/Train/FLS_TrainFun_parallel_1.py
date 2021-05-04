@@ -3,7 +3,7 @@
 # @Time    : 2021/5/3
 # @Author  : Wangjiawen
 
-# Note : Parallel algorithm must be run on Linux system!
+# Note : Parallel algorithm must be run on Linux system.
 
 
 
@@ -47,17 +47,16 @@ def SubMode_train(MODE,lossFunction,Xtrain_subMode,Ytrain_subMode,batch_size,que
         with tf.GradientTape() as tape:
             output_data=MODE(Xtrain_subMode[Block_id*batch_size:(Block_id+1)*batch_size,:])
             Loss=lossFunction(output_data,Ytrain_subMode[Block_id*batch_size:(Block_id+1)*batch_size])
-            Loss=tf.sqrt(Loss)
         grades=tape.gradient(Loss,MODE.trainable_variables)
-        for i in range(len(grades)):
-            MODE.trainable_variables[i] = MODE.trainable_variables[i] - learn_rate*grades[i]
+        # for i in range(len(grades)):
+        #     MODE.trainable_variables[i] = MODE.trainable_variables[i] + learn_rate*grades[i]
 
-        #Optimizer.apply_gradients(zip(grades,MODE.trainable_variables))
+        tf.keras.optimizers.Adagrad(learn_rate).apply_gradients(zip(grades,MODE.trainable_variables))
         print('>>>Processes id:{}, Block_id:{}/{},Block_loss:{}'.format(os.getpid(),Block_id+1,len(Xtrain_subMode)//batch_size,Loss))
-        # for g_id in range(count):
-        #     subMode_grade[g_id] += grades[g_id]
+        for g_id in range(count):
+             subMode_grade[g_id] += grades[g_id]
     #queue.put((subMode_grade,Loss))
-    queue.put((MODE.trainable_variables,Loss))
+    queue.put((MODE.trainable_variables,Loss,subMode_grade))
 
 
 def FLS_TrainFun_parallel_1(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrain,Xpredict,Ypredict=None,\
@@ -87,9 +86,9 @@ def FLS_TrainFun_parallel_1(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Yt
     Mode=eval(Mode_Name+str((Rule_num,Antecedents_num,InitialSetup_List)))
 
     print('******************************************************************')
-    #print('FLS2.variables',Mode.variables)
+    #print(Mode_Name+'.variables',Mode.variables)
     print('******************************************************************')
-    print('FLS2.trainable_variables:',Mode.trainable_variables)
+    print(Mode_Name+'.trainable_variables:',Mode.trainable_variables)
     print('******************************************************************')
 
     if len(Xtrain)<batchSIZE or len(Xtrain)<processesNum:
@@ -113,13 +112,16 @@ def FLS_TrainFun_parallel_1(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Yt
 
     for epoch_id in range(epoch):
         print('>>>>>>>>>>>>>>>>>>>>>>>epoch:{}/{}<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(epoch_id+1,epoch))
+        Epoch_sample_id=random.sample(range(0,len(Xtrain)),len(Xtrain))
+        Xtrain_epoch = Xtrain[Epoch_sample_id,:]
+        Ytrain_epoch = Ytrain[Epoch_sample_id]
 
         Grade_subMode = Queue()
         subModes = []
         for subMode_id in range(processesNum):
             submode = Process(target= SubMode_train ,args = (Mode,lossFunction,\
-                Xtrain[subMode_id*Block_SizeOfProcesses:(subMode_id+1)*Block_SizeOfProcesses,:],\
-                Ytrain[subMode_id*Block_SizeOfProcesses:(subMode_id+1)*Block_SizeOfProcesses], \
+                Xtrain_epoch[subMode_id*Block_SizeOfProcesses:(subMode_id+1)*Block_SizeOfProcesses,:],\
+                Ytrain_epoch[subMode_id*Block_SizeOfProcesses:(subMode_id+1)*Block_SizeOfProcesses], \
                 batchSIZE,Grade_subMode,subMode_learningRate))
             subModes.append(submode)
             submode.start()
@@ -128,18 +130,21 @@ def FLS_TrainFun_parallel_1(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Yt
             submode.join()
         
         Grades_set = Grade_subMode.get()
-        saveloss=Grades_set[1]
+        saveloss = Grades_set[1]
         for i_num in range(1,processesNum,1):
             q_g =  Grade_subMode.get()
             for j_num in range(len(q_g)):
                 Grades_set[0][j_num] = Grades_set[0][j_num] + q_g[0][j_num]
+                Grades_set[2][j_num] = Grades_set[2][j_num] + q_g[2][j_num]
                 #tf.assign_add(Grades_set[0][j_num] , q_g[0][j_num])
             saveloss += q_g[1]
         #Grades_H = Grades_set[0]
         for j_num in range(len(Grades_set)):
             Grades_set[0][j_num] = Grades_set[0][j_num] / processesNum
-        #Mode.Setting_parameters(Grades_set[0]) 
-        optimizer.apply_gradients(zip(Grades_set[0],Mode.trainable_variables))
+            Grades_set[2][j_num] = Grades_set[2][j_num] / processesNum
+    
+        Mode.Setting_parameters(Grades_set[0]) 
+        optimizer.apply_gradients(zip(Grades_set[2],Mode.trainable_variables))
                    
         # optimizer.apply_gradients(zip(Grades_set[0],Mode.trainable_variables))
 
@@ -149,7 +154,7 @@ def FLS_TrainFun_parallel_1(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Yt
 
         #print('>>>>>>>>>> epoch:{}/{},Block_SizeOfProcesses:{},block_loss:{}'.format(epoch_id+1,epoch,Block_id+1,Block_SizeOfProcesses,Loss))
             #print('**********grades:',grades)
-        Loss_save[epoch_id]=saveloss
+        Loss_save[epoch_id]= tf.sqrt(saveloss)
 
         output_data_validat=Mode(XvalidationSet)
         Loss_validat[epoch_id]=tf.sqrt(lossFunction(output_data_validat,YvalidationSet))

@@ -21,6 +21,10 @@ class SingleT1FLS_TSK(tf.keras.Model):
         self.FRB_parameterNum = FRBparameterNum 
         self.C = C_init
 
+    def Setting_parameters(self,Grades_set):
+        self.FRB_weights.assign(Grades_set[0])
+        self.C.assign(Grades_set[1])
+
     #模糊规则库参数初始化
     def _initialize_weight(self,InitialSetup_List):
         FRB_ParaNum = tf.constant(0,tf.int32)

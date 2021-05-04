@@ -51,6 +51,12 @@ class SingleT2FLS_FWA(tf.keras.Model):
         print('***********Initialization of fuzzy rule base parameters completed!*************')
         return FRB_W,FRB_ParaList,W_m_init,W_s_init,B_m_init,B_s_init
 
+    def Setting_parameters(self,Grades_set):
+        self.FRB_weights.assign(Grades_set[0])
+        self.W_m.assign(Grades_set[1])
+        self.W_s.assign(Grades_set[2])
+        self.B_m.assign(Grades_set[3])
+        self.B_s.assign(Grades_set[4])
 
     def GetFRB_weights(self):
         return self.FRB_weights,self.W_m,self.W_s,self.B_m,self.B_s
