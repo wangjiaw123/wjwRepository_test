@@ -8,6 +8,8 @@ import numpy as np
 import tensorflow as tf
 from Train.FLS_TrainFun import FLS_TrainFun
 from Train.FLS_TrainFun_parallel import FLS_TrainFun_parallel
+from Train.FLS_TrainFun_parallel_1 import FLS_TrainFun_parallel_1
+
 def DF(x):
     a=0.2
     return (a*x)/(1+x**10)
@@ -48,7 +50,7 @@ for i in range(n_train):
 
 AntecedentsNum=4
 data_size=500
-multiple=2
+multiple=1
 X_train=np.zeros([multiple*data_size-3,AntecedentsNum])
 Y_train=np.zeros(multiple*data_size-3)
 X_test=np.zeros([data_size-3,AntecedentsNum])
@@ -90,7 +92,12 @@ LL=[['G','G','G','G','G','G'],['G','G','G','G','G','G'],
 #     batchSIZE=32,epoch=5,useGPU=False,saveMode=False,outputModeName=None,modeSavePath=None)
 
 
-FLS_TrainFun_parallel(16,4,LL,X_train,Y_train,X_test,Ypredict=Y_test,modeName='Mamdani',modeType=2,predictMode=False,\
-    validationRatio=0.2,XvalidationSet=None,YvalidationSet=None,\
-    optimizer=tf.keras.optimizers.Adam(0.01),lossFunction=tf.keras.losses.mean_squared_error,\
-    batchSIZE=32,epoch=2,useGPU=True,processesNum=12)   
+# FLS_TrainFun_parallel(16,4,LL,X_train,Y_train,X_test,Ypredict=Y_test,modeName='Mamdani',modeType=2,predictMode=False,\
+#     validationRatio=0.2,XvalidationSet=None,YvalidationSet=None,\
+#     optimizer=tf.keras.optimizers.Adam(0.1),lossFunction=tf.keras.losses.mean_squared_error,\
+#     batchSIZE=32,epoch=15,useGPU=True,processesNum=12)   
+
+FLS_TrainFun_parallel_1(16,4,LL,X_train,Y_train,X_test,Ypredict=Y_test,modeName='Mamdani',modeType=2,predictMode=False,\
+    validationRatio=0.1,XvalidationSet=None,YvalidationSet=None,\
+    optimizer=tf.keras.optimizers.Adam(0.1),lossFunction=tf.keras.losses.mean_squared_error,\
+    batchSIZE=32,epoch=15,useGPU=True,processesNum=12)     

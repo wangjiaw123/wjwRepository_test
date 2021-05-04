@@ -9,7 +9,7 @@
 
 import sys
 
-from tensorflow.python.framework.load_library import load_file_system_library
+#from tensorflow.python.framework.load_library import load_file_system_library
 sys.path.append('..')
 import os
 import time
@@ -31,7 +31,7 @@ from ST1FLS.SingleT1FLS_TSK import *
 
 
 # 子进程调用
-def SubMode_train(MODE,lossFunction,Xtrain_subMode,Ytrain_subMode,batch_size,queue):
+def SubMode_train(MODE,lossFunction,Xtrain_subMode,Ytrain_subMode,batch_size,queue,learn_rate=tf.constant(0.001)):
     lackNum = batch_size-len(Xtrain_subMode) % batch_size
     copy_sample_id = random.sample(range(0,len(Xtrain_subMode)),lackNum)
     Xtrain_subMode = np.r_[Xtrain_subMode,Xtrain_subMode[copy_sample_id,:]]
@@ -49,16 +49,21 @@ def SubMode_train(MODE,lossFunction,Xtrain_subMode,Ytrain_subMode,batch_size,que
             Loss=lossFunction(output_data,Ytrain_subMode[Block_id*batch_size:(Block_id+1)*batch_size])
             Loss=tf.sqrt(Loss)
         grades=tape.gradient(Loss,MODE.trainable_variables)
+        for i in range(len(grades)):
+            MODE.trainable_variables[i] = MODE.trainable_variables[i] - learn_rate*grades[i]
+
+        #Optimizer.apply_gradients(zip(grades,MODE.trainable_variables))
         print('>>>Processes id:{}, Block_id:{}/{},Block_loss:{}'.format(os.getpid(),Block_id+1,len(Xtrain_subMode)//batch_size,Loss))
-        for g_id in range(count):
-            subMode_grade[g_id] += grades[g_id]
-    queue.put((subMode_grade,Loss))
+        # for g_id in range(count):
+        #     subMode_grade[g_id] += grades[g_id]
+    #queue.put((subMode_grade,Loss))
+    queue.put((MODE.trainable_variables,Loss))
 
 
-def FLS_TrainFun_parallel(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrain,Xpredict,Ypredict=None,\
+def FLS_TrainFun_parallel_1(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrain,Xpredict,Ypredict=None,\
     modeName='Mamdani',modeType=2,predictMode=True,validationRatio=0.1,XvalidationSet=None,YvalidationSet=None,\
     optimizer=tf.keras.optimizers.Adam(0.05),lossFunction=tf.keras.losses.mean_squared_error,\
-    batchSIZE=1,epoch=5,useGPU=False,processesNum=None):
+    batchSIZE=1,epoch=5,subMode_learningRate=tf.constant(0.01),useGPU=False,processesNum=None):
 
     '''
     Rule_num:规则数量,Antecedents_num:前件数量,InitialSetup_List:模糊规则初始化列表
@@ -114,7 +119,8 @@ def FLS_TrainFun_parallel(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytra
         for subMode_id in range(processesNum):
             submode = Process(target= SubMode_train ,args = (Mode,lossFunction,\
                 Xtrain[subMode_id*Block_SizeOfProcesses:(subMode_id+1)*Block_SizeOfProcesses,:],\
-                Ytrain[subMode_id*Block_SizeOfProcesses:(subMode_id+1)*Block_SizeOfProcesses], batchSIZE,Grade_subMode))
+                Ytrain[subMode_id*Block_SizeOfProcesses:(subMode_id+1)*Block_SizeOfProcesses], \
+                batchSIZE,Grade_subMode,subMode_learningRate))
             subModes.append(submode)
             submode.start()
 
@@ -126,13 +132,16 @@ def FLS_TrainFun_parallel(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytra
         for i_num in range(1,processesNum,1):
             q_g =  Grade_subMode.get()
             for j_num in range(len(q_g)):
-                Grades_set[0][j_num] += q_g[0][j_num]
+                Grades_set[0][j_num] = Grades_set[0][j_num] + q_g[0][j_num]
+                #tf.assign_add(Grades_set[0][j_num] , q_g[0][j_num])
             saveloss += q_g[1]
-        
-        # for j_num in range(len(Grades_set)):
-        #     Grades_set[0][j_num] /= processesNum
-                    
+        #Grades_H = Grades_set[0]
+        for j_num in range(len(Grades_set)):
+            Grades_set[0][j_num] = Grades_set[0][j_num] / processesNum
+        #Mode.Setting_parameters(Grades_set[0]) 
         optimizer.apply_gradients(zip(Grades_set[0],Mode.trainable_variables))
+                   
+        # optimizer.apply_gradients(zip(Grades_set[0],Mode.trainable_variables))
 
         #print('Grades_set',Grades_set)
 
@@ -222,11 +231,3 @@ def FLS_TrainFun_parallel(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytra
 
     print('********************* Training and predicting are all over! ***********************')
     
-
-
-
-
-
-
-
-

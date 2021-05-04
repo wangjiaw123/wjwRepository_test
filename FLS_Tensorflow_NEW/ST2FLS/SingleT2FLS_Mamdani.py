@@ -41,6 +41,19 @@ class SingleT2FLS_Mamdani(tf.keras.Model):
         print('***********Initialization of fuzzy rule base parameters completed!*************')
         return FRB_W,FRB_ParaList,c1,c2
 
+    def Setting_parameters(self,Grades_set):
+        self.FRB_weights.assign(Grades_set[0])
+        self.c1.assign(Grades_set[1])
+        self.c2.assign(Grades_set[2])
+        # for i in range(len(Grades_set[0])):
+        #     tf.tensor_scatter_nd_update(self.FRB_weights,tf.constant([[i]]),\
+        #         [Grades_set[0][i]])
+        # for j in range(len(Grades_set[1])):
+        #     tf.tensor_scatter_nd_update(self.c1,tf.constant([[j]]),\
+        #         [Grades_set[1][j]])
+        #     tf.tensor_scatter_nd_update(self.c2,tf.constant([[j]]),\
+        #         [Grades_set[2][j]])
+
   
 
     def GetFRB_weights(self):
