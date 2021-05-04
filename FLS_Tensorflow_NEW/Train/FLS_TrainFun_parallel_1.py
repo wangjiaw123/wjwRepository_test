@@ -242,5 +242,5 @@ def FLS_TrainFun_parallel_1(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Yt
     
     #plt.show()
 
-    print('********************* Training and predicting are all over! ***********************')
+    print('********************* The program has ended! ***********************')
     

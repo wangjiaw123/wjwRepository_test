@@ -1,2 +1,0 @@
-model_checkpoint_path: "SingleT2FLS_TSK.ckpt"
-all_model_checkpoint_paths: "SingleT2FLS_TSK.ckpt"
