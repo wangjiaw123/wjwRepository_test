@@ -1,15 +1,15 @@
 #/usr/bin/python3
 # -*- coding: utf-8 -*-
-# @Time    : 2021/5/3
+# @Time    : 2021/5/4
 # @Author  : Wangjiawen
 
-# Note : Parallel algorithm must be run on Linux system!
+# Note : Parallel algorithm must be run on Linux system.
 
 
 
 import sys
 
-from tensorflow.python.framework.load_library import load_file_system_library
+#from tensorflow.python.framework.load_library import load_file_system_library
 sys.path.append('..')
 import os
 import time
@@ -31,7 +31,7 @@ from ST1FLS.SingleT1FLS_TSK import *
 
 
 # 子进程调用
-def SubMode_train(MODE,lossFunction,Xtrain_subMode,Ytrain_subMode,batch_size,queue):
+def SubMode_train(MODE,lossFunction,Xtrain_subMode,Ytrain_subMode,batch_size,queue,learn_rate=tf.constant(0.001)):
     lackNum = batch_size-len(Xtrain_subMode) % batch_size
     copy_sample_id = random.sample(range(0,len(Xtrain_subMode)),lackNum)
     Xtrain_subMode = np.r_[Xtrain_subMode,Xtrain_subMode[copy_sample_id,:]]
@@ -47,18 +47,22 @@ def SubMode_train(MODE,lossFunction,Xtrain_subMode,Ytrain_subMode,batch_size,que
         with tf.GradientTape() as tape:
             output_data=MODE(Xtrain_subMode[Block_id*batch_size:(Block_id+1)*batch_size,:])
             Loss=lossFunction(output_data,Ytrain_subMode[Block_id*batch_size:(Block_id+1)*batch_size])
-            Loss=tf.sqrt(Loss)
         grades=tape.gradient(Loss,MODE.trainable_variables)
+        # for i in range(len(grades)):
+        #     MODE.trainable_variables[i] = MODE.trainable_variables[i] + learn_rate*grades[i]
+
+        tf.keras.optimizers.Adagrad(learn_rate).apply_gradients(zip(grades,MODE.trainable_variables))
         print('>>>Processes id:{}, Block_id:{}/{},Block_loss:{}'.format(os.getpid(),Block_id+1,len(Xtrain_subMode)//batch_size,Loss))
         for g_id in range(count):
-            subMode_grade[g_id] += grades[g_id]
-    queue.put((subMode_grade,Loss))
+             subMode_grade[g_id] += grades[g_id]
+    #queue.put((subMode_grade,Loss))
+    queue.put((MODE.trainable_variables,Loss,subMode_grade))
 
 
 def FLS_TrainFun_parallel(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrain,Xpredict,Ypredict=None,\
     modeName='Mamdani',modeType=2,predictMode=True,validationRatio=0.1,XvalidationSet=None,YvalidationSet=None,\
     optimizer=tf.keras.optimizers.Adam(0.05),lossFunction=tf.keras.losses.mean_squared_error,\
-    batchSIZE=1,epoch=5,useGPU=False,processesNum=None):
+    batchSIZE=1,epoch=5,subMode_learningRate=tf.constant(0.01),useGPU=False,processesNum=None,RMSE_threshold=None):
 
     '''
     Rule_num:规则数量,Antecedents_num:前件数量,InitialSetup_List:模糊规则初始化列表
@@ -82,9 +86,9 @@ def FLS_TrainFun_parallel(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytra
     Mode=eval(Mode_Name+str((Rule_num,Antecedents_num,InitialSetup_List)))
 
     print('******************************************************************')
-    #print('FLS2.variables',Mode.variables)
+    #print(Mode_Name+'.variables',Mode.variables)
     print('******************************************************************')
-    print('FLS2.trainable_variables:',Mode.trainable_variables)
+    print(Mode_Name+'.trainable_variables:',Mode.trainable_variables)
     print('******************************************************************')
 
     if len(Xtrain)<batchSIZE or len(Xtrain)<processesNum:
@@ -105,16 +109,20 @@ def FLS_TrainFun_parallel(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytra
 
     Loss_save = np.zeros(epoch)
     Loss_validat = np.zeros(epoch)
-
+    RMSE_threshold_count = 0
     for epoch_id in range(epoch):
         print('>>>>>>>>>>>>>>>>>>>>>>>epoch:{}/{}<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(epoch_id+1,epoch))
+        Epoch_sample_id=random.sample(range(0,len(Xtrain)),len(Xtrain))
+        Xtrain_epoch = Xtrain[Epoch_sample_id,:]
+        Ytrain_epoch = Ytrain[Epoch_sample_id]
 
         Grade_subMode = Queue()
         subModes = []
         for subMode_id in range(processesNum):
             submode = Process(target= SubMode_train ,args = (Mode,lossFunction,\
-                Xtrain[subMode_id*Block_SizeOfProcesses:(subMode_id+1)*Block_SizeOfProcesses,:],\
-                Ytrain[subMode_id*Block_SizeOfProcesses:(subMode_id+1)*Block_SizeOfProcesses], batchSIZE,Grade_subMode))
+                Xtrain_epoch[subMode_id*Block_SizeOfProcesses:(subMode_id+1)*Block_SizeOfProcesses,:],\
+                Ytrain_epoch[subMode_id*Block_SizeOfProcesses:(subMode_id+1)*Block_SizeOfProcesses], \
+                batchSIZE,Grade_subMode,subMode_learningRate))
             subModes.append(submode)
             submode.start()
 
@@ -122,17 +130,23 @@ def FLS_TrainFun_parallel(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytra
             submode.join()
         
         Grades_set = Grade_subMode.get()
-        saveloss=Grades_set[1]
+        saveloss = Grades_set[1]
         for i_num in range(1,processesNum,1):
             q_g =  Grade_subMode.get()
-            for j_num in range(len(q_g)):
-                Grades_set[0][j_num] += q_g[0][j_num]
+            for j_num in range(len(q_g[0])):
+                Grades_set[0][j_num] = Grades_set[0][j_num] + q_g[0][j_num]
+                Grades_set[2][j_num] = Grades_set[2][j_num] + q_g[2][j_num]
+                #tf.assign_add(Grades_set[0][j_num] , q_g[0][j_num])
             saveloss += q_g[1]
-        
-        # for j_num in range(len(Grades_set)):
-        #     Grades_set[0][j_num] /= processesNum
-                    
-        optimizer.apply_gradients(zip(Grades_set[0],Mode.trainable_variables))
+        #Grades_H = Grades_set[0]
+        for j_num in range(len(Grades_set[0])):
+            Grades_set[0][j_num] = Grades_set[0][j_num] / processesNum
+            Grades_set[2][j_num] = Grades_set[2][j_num] / processesNum
+    
+        Mode.Setting_parameters(Grades_set[0]) 
+        optimizer.apply_gradients(zip(Grades_set[2],Mode.trainable_variables))
+                   
+        # optimizer.apply_gradients(zip(Grades_set[0],Mode.trainable_variables))
 
         #print('Grades_set',Grades_set)
 
@@ -140,11 +154,19 @@ def FLS_TrainFun_parallel(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytra
 
         #print('>>>>>>>>>> epoch:{}/{},Block_SizeOfProcesses:{},block_loss:{}'.format(epoch_id+1,epoch,Block_id+1,Block_SizeOfProcesses,Loss))
             #print('**********grades:',grades)
-        Loss_save[epoch_id]=saveloss
+        Loss_save[epoch_id]= tf.sqrt(saveloss)
 
         output_data_validat=Mode(XvalidationSet)
         Loss_validat[epoch_id]=tf.sqrt(lossFunction(output_data_validat,YvalidationSet))
-        print('epoch:{}/{},Loss:{},Loss_validat:{}'.format(epoch_id+1,epoch,saveloss,Loss_validat[epoch_id]))
+        print('epoch:{}/{},loss:{},loss_validat:{}'.format(epoch_id+1,epoch,saveloss,Loss_validat[epoch_id]))
+
+        # 3次小于阈值则结束
+        if RMSE_threshold and Loss_save[epoch_id] < RMSE_threshold:
+            RMSE_threshold_count += 1
+        if RMSE_threshold and RMSE_threshold_count>=3:
+            epoch = epoch_id
+            break
+            
 
     endtime=time.time()
     dtime=endtime-startime
@@ -220,13 +242,5 @@ def FLS_TrainFun_parallel(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytra
     
     #plt.show()
 
-    print('********************* Training and predicting are all over! ***********************')
+    print('********************* The program has ended! ***********************')
     
-
-
-
-
-
-
-
-

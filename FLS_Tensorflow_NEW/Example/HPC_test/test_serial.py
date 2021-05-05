@@ -235,12 +235,12 @@ def FLS_TrainFun_parallel_1(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Yt
         saveloss = Grades_set[1]
         for i_num in range(1,processesNum,1):
             q_g =  Grade_subMode.get()
-            for j_num in range(len(q_g)):
+            for j_num in range(len(q_g[0])):
                 Grades_set[0][j_num] = Grades_set[0][j_num] + q_g[0][j_num]
                 Grades_set[2][j_num] = Grades_set[2][j_num] + q_g[2][j_num]
             saveloss += q_g[1]
     
-        for j_num in range(len(Grades_set)):
+        for j_num in range(len(Grades_set[0])):
             Grades_set[0][j_num] = Grades_set[0][j_num] / processesNum
             Grades_set[2][j_num] = Grades_set[2][j_num] / processesNum
     
