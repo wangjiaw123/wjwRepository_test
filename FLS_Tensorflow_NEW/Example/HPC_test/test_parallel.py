@@ -19,14 +19,149 @@ from multiprocessing import Process, Queue       #使用多进程加速，实现
 
 from tensorflow.python.eager.backprop import GradientTape
 from tensorflow.python.ops.functional_ops import Gradient
-#导入2型FLS系统
-from ST2FLS.SingleT2FLS_Mamdani import *
-from ST2FLS.SingleT2FLS_TSK import *
-from ST2FLS.SingleT2FLS_FWA import *
-#导入1型FLS系统
-from ST1FLS.SingleT1FLS_Mamdani import *
-from ST1FLS.SingleT1FLS_TSK import *
 
+
+
+def Gausstype2(Xt_gs,GaussT2_parameter):
+    Sigma_gs,M1_gs,M2_gs = GaussT2_parameter[0],GaussT2_parameter[1],\
+        GaussT2_parameter[2]
+    Sigma_gs=Sigma_gs+0.0001
+    m1=tf.minimum(M1_gs,M2_gs)    #m1=<m2
+    m2=tf.maximum(M1_gs,M2_gs)
+    m_middle=tf.divide(tf.add(m1,m2),2.0)
+
+    if (Xt_gs>=m1) and (Xt_gs<=m_middle):
+        mu1=tf.constant(1.0,tf.float32)                
+        mu2=tf.exp(-tf.pow(Xt_gs-m2,2.0)/(2.0*tf.pow(Sigma_gs,2.0)))
+    elif (Xt_gs>m_middle) and (Xt_gs<=m2):
+        mu1=tf.constant(1.0,tf.float32)
+        mu2=tf.exp(-tf.pow(Xt_gs-m1,2.0)/(2.0*tf.pow(Sigma_gs,2.0)))
+    elif (Xt_gs>m2):
+        mu1=tf.exp(-tf.pow(Xt_gs-m2,2.0)/(2.0*tf.pow(Sigma_gs,2.0)))
+        mu2=tf.exp(-tf.pow(Xt_gs-m1,2.0)/(2.0*tf.pow(Sigma_gs,2.0)))
+    else:
+        mu1=tf.exp(-tf.pow(Xt_gs-m1,2.0)/(2.0*tf.pow(Sigma_gs,2.0)))
+        mu2=tf.exp(-tf.pow(Xt_gs-m2,2.0)/(2.0*tf.pow(Sigma_gs,2.0))) 
+
+    return mu2,mu1        #mu2<=mu1
+
+
+class SingleT2FLS_Mamdani(tf.keras.Model):
+    #构造函数__init__
+    def __init__(self,FuzzyRuleNum,FuzzyAntecedentsNum,InitialSetup_List):
+        super(SingleT2FLS_Mamdani,self).__init__()
+        self.Rule_num = FuzzyRuleNum
+        self.Antecedents_num = FuzzyAntecedentsNum
+        self.Init_SetupList = InitialSetup_List
+        FuzzyRuleBase_weights,FRBparameterNum,c1_init,c2_init = self._initialize_weight(InitialSetup_List)
+        self.FRB_weights = FuzzyRuleBase_weights
+        self.FRB_parameterNum = FRBparameterNum 
+        self.c1 = c1_init
+        self.c2 = c2_init 
+        self.count = 0    
+
+    #模糊规则库参数初始化
+    def _initialize_weight(self,InitialSetup_List):
+        FRB_ParaNum = tf.constant(0,tf.int32)
+        FRB_ParaList = list()
+        for i in range(self.Rule_num):
+            for j in range(self.Antecedents_num):
+                if InitialSetup_List[i][j] == 'G':
+                    FRB_ParaList.append(3)
+                    FRB_ParaNum +=3
+        FRB_W = tf.Variable(tf.math.abs(tf.random.get_global_generator().normal(shape=(FRB_ParaNum,))),trainable=True)
+        c1 = tf.Variable(tf.abs(tf.random.get_global_generator().normal(shape=(self.Rule_num,))),trainable=True)     #初始化c1
+        c2 = tf.Variable(tf.abs(tf.random.get_global_generator().normal(shape=(self.Rule_num,))) \
+                  ,trainable=True)  #初始化c2   #+c1[tf.argmax(c1,0)]-c1[tf.argmin(c1,0)] 
+        print('***********Initialization of fuzzy rule base parameters completed!*************')
+        return FRB_W,FRB_ParaList,c1,c2
+
+    def Setting_parameters(self,Grades_set):
+        self.FRB_weights.assign(Grades_set[0])
+        self.c1.assign(Grades_set[1])
+        self.c2.assign(Grades_set[2])
+        # for i in range(len(Grades_set[0])):
+        #     tf.tensor_scatter_nd_update(self.FRB_weights,tf.constant([[i]]),\
+        #         [Grades_set[0][i]])
+        # for j in range(len(Grades_set[1])):
+        #     tf.tensor_scatter_nd_update(self.c1,tf.constant([[j]]),\
+        #         [Grades_set[1][j]])
+        #     tf.tensor_scatter_nd_update(self.c2,tf.constant([[j]]),\
+        #         [Grades_set[2][j]])
+
+  
+
+    def GetFRB_weights(self):
+        return self.FRB_weights,self.c1,self.c2
+
+    def Compute_LeftPoint(self,UU,LL):    
+        c1_sort = tf.sort(self.c1,direction='ASCENDING')
+        c1_index = tf.argsort(self.c1,direction='ASCENDING')
+        UU_sort = tf.gather(UU,c1_index)
+        LL_sort = tf.gather(LL,c1_index)
+        l_out = 0
+        s = 0
+        s1 = 0
+        b2=c1_sort
+        s = tf.reduce_sum(tf.multiply(b2,LL_sort))
+        s1 = tf.reduce_sum(LL_sort)
+        l_out=s/s1
+        for i in range(self.Rule_num):
+            s += b2[i]*(UU_sort[i]-LL_sort[i])
+            s1 += UU_sort[i]-LL_sort[i]
+            l_out = tf.minimum(l_out,s/s1)
+
+        return l_out
+
+    def Compute_RightPoint(self,UU,LL):
+        c2_sort = tf.sort(self.c2,direction='ASCENDING')
+        c2_index = tf.argsort(self.c2,direction='ASCENDING')
+        UU_sort = tf.gather(UU,c2_index)
+        LL_sort = tf.gather(LL,c2_index)
+        r_out = 0
+        s = 0
+        s1 = 0
+        b1=c2_sort
+        s = tf.reduce_sum(tf.multiply(b1,UU_sort))
+        s1 = tf.reduce_sum(UU_sort)
+        r_out=s/s1
+        for i in range(self.Rule_num):
+            s += b1[i]*(LL_sort[i]-UU_sort[i])
+            s1 += LL_sort[i]-UU_sort[i]
+            r_out = tf.maximum(r_out,s/s1)
+
+        return r_out
+
+    def call(self,input_data):
+        #tf.keras.backend.set_floatx('float64')
+        samples_num = input_data.shape[0]
+        Output_Left=tf.ones(samples_num)
+        Output_Right=tf.ones(samples_num)
+        for sample_i in range(samples_num):
+            input = input_data[sample_i] 
+            #print('**//////** Number {},input(Sample):{}'.format(sample_i,input)) 
+            UU=np.ones(self.Rule_num)
+            LL=np.ones(self.Rule_num)
+            for j in range(self.Rule_num):
+                Uu = tf.constant(1.0)
+                Ll = tf.constant(1.0) 
+                for k in range(self.Antecedents_num):
+                    locat_num = self.Antecedents_num*j+k
+                    if self.Init_SetupList[j][k]=='G':
+                        mu_small,mu_big = Gausstype2(input[k],self.FRB_weights[locat_num:locat_num+3])
+                    Uu *= mu_big
+                    Ll *= mu_small
+                UU=tf.tensor_scatter_nd_update(UU,tf.constant([[j]]),[Uu])
+                LL=tf.tensor_scatter_nd_update(LL,tf.constant([[j]]),[Ll])
+                UU=tf.cast(UU,dtype=tf.float32)
+                LL=tf.cast(LL,dtype=tf.float32)
+            Output_Left=tf.tensor_scatter_nd_update(Output_Left,tf.constant([[sample_i]]),\
+                [self.Compute_LeftPoint(UU,LL)])
+            Output_Right=tf.tensor_scatter_nd_update(Output_Right,tf.constant([[sample_i]]),\
+                [self.Compute_RightPoint(UU,LL)])
+        Output = (Output_Right+Output_Left)/2.0
+        #print('Output:',Output)
+        return Output
 
 # 子进程调用
 def SubMode_train(MODE,lossFunction,Xtrain_subMode,Ytrain_subMode,batch_size,queue,learn_rate=tf.constant(0.001)):
@@ -169,7 +304,7 @@ for i in range(n_train):
 data_Num = 4
 Rule = [16,32]
 Epoch_num = 20
-#processes_num = [processes_N for processes_N in range(2,22,2)]
+processes_num = [processes_N for processes_N in range(2,22,2)]
 AntecedentsNum=4
 data_size=500
 predict_size = 300
@@ -215,33 +350,20 @@ LL=[['G','G','G','G','G','G'],['G','G','G','G','G','G'],
     ['G','G','G','G','G','G'],['G','G','G','G','G','G'],
     ['G','G','G','G','G','G'],['G','G','G','G','G','G']]
 
-serial_time = np.zeros([len(Rule),data_Num])
-serial_predict_RMSE = np.zeros([len(Rule),data_Num])
-serial_RMSE = np.zeros([len(Rule),data_Num,Epoch_num])
+parallel_time = np.zeros([len(Rule),data_Num,len(processes_num)])
+parallel_predict_RMSE = np.zeros([len(Rule),data_Num,len(processes_num)])
+parallel_RMSE = np.zeros([len(Rule),data_Num,len(processes_num),Epoch_num])
 
 for r in range(len(Rule)):
     for d in range(data_Num):
-        _RMSE, _predict_RMSE,_time = FLS_TrainFun_parallel_1(Rule[r],AntecedentsNum,LL,TRAIN_XY[d][0],TRAIN_XY[d][1],TEST_XY[d][0],TEST_XY[d][1],\
-            modeName='Mamdani',modeType=2,predictMode=True,optimizer=tf.keras.optimizers.Adam(0.05),\
-            lossFunction=tf.keras.losses.mean_squared_error,batchSIZE=16,epoch=Epoch_num,subMode_learningRate=tf.constant(0.01),processesNum=1)
-        serial_time[r,d] = _time
-        serial_predict_RMSE[r,d] = _predict_RMSE
-        serial_RMSE[r,d,:] = _RMSE
+        for p in range(len(processes_num)):
+            _RMSE, _predict_RMSE,_time = FLS_TrainFun_parallel_1(Rule[r],AntecedentsNum,LL,TRAIN_XY[d][0],TRAIN_XY[d][1],TEST_XY[d][0],TEST_XY[d][1],\
+                modeName='Mamdani',modeType=2,predictMode=True,optimizer=tf.keras.optimizers.Adam(0.05),\
+                lossFunction=tf.keras.losses.mean_squared_error,batchSIZE=16,epoch=Epoch_num,subMode_learningRate=tf.constant(0.01),processesNum=processes_num[p])
+            parallel_time[r,d,p] = _time
+            parallel_predict_RMSE[r,d,p] = _predict_RMSE
+            parallel_RMSE[r,d,p,:] = _RMSE
 
-np.save("serial_time.npy",serial_time)
-np.save("serial_predict_RMSE.npy",serial_predict_RMSE)        
-np.save("serial_RMSE.npy",serial_RMSE)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+np.save("parallel_time.npy",parallel_time)
+np.save("parallel_predict_RMSE.npy",parallel_predict_RMSE)        
+np.save("parallel_RMSE.npy",parallel_RMSE)
