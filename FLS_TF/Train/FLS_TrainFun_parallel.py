@@ -31,6 +31,7 @@ from ST1FLS.SingleT1FLS_TSK import *
 
 
 # 子进程调用
+'''
 def SubMode_train(MODE,lossFunction,Xtrain_subMode,Ytrain_subMode,batch_size,queue,learn_rate=tf.constant(0.001)):
     lackNum = batch_size-len(Xtrain_subMode) % batch_size
     copy_sample_id = random.sample(range(0,len(Xtrain_subMode)),lackNum)
@@ -57,6 +58,51 @@ def SubMode_train(MODE,lossFunction,Xtrain_subMode,Ytrain_subMode,batch_size,que
              subMode_grade[g_id] += grades[g_id]
     #queue.put((subMode_grade,Loss))
     queue.put((MODE.trainable_variables,Loss,subMode_grade))
+'''
+
+# 子进程调用
+def SubMode_train(MODE,lossFunction,Xtrain_subMode,Ytrain_subMode,batch_size,queue,learn_rate=tf.constant(0.001)):
+    lackNum = batch_size-len(Xtrain_subMode) % batch_size
+    copy_sample_id = random.sample(range(0,len(Xtrain_subMode)),lackNum)
+    Xtrain_subMode = np.r_[Xtrain_subMode,Xtrain_subMode[copy_sample_id,:]]
+    Ytrain_subMode = np.r_[Ytrain_subMode,Ytrain_subMode[copy_sample_id]]
+
+    subMode_grade = []
+    count = 0
+    for g in MODE.trainable_variables:
+        count += 1
+        subMode_grade.append(tf.zeros(g.shape))
+
+    if len(Xtrain_subMode)%batch_size == 0:
+        total_num = len(Xtrain_subMode)//batch_size
+    else:
+        total_num = len(Xtrain_subMode)//batch_size+1
+    
+    for Block_id in range(len(Xtrain_subMode) // batch_size):
+        with tf.GradientTape() as tape:
+            output_data=MODE(Xtrain_subMode[Block_id*batch_size:(Block_id+1)*batch_size,:])
+            Loss=lossFunction(output_data,Ytrain_subMode[Block_id*batch_size:(Block_id+1)*batch_size])
+        grades=tape.gradient(Loss,MODE.trainable_variables)
+        # for i in range(len(grades)):
+        #     MODE.trainable_variables[i] = MODE.trainable_variables[i] + learn_rate*grades[i]
+
+        tf.keras.optimizers.Adagrad(learn_rate).apply_gradients(zip(grades,MODE.trainable_variables))
+        print('>>>Processes id:{}, Block_id:{}/{},Block_loss:{}'.format(os.getpid(),Block_id+1,total_num,Loss))
+        for g_id in range(count):
+             subMode_grade[g_id] += grades[g_id]
+    #queue.put((subMode_grade,Loss))
+    if len(Xtrain_subMode)%batch_size != 0:
+        with tf.GradientTape() as tape:
+            output_data=MODE(Xtrain_subMode[len(Xtrain_subMode)-(len(Xtrain_subMode) % batch_size):,:])
+            Loss=lossFunction(output_data,Ytrain_subMode[len(Xtrain_subMode)-(len(Xtrain_subMode) % batch_size):])
+        grades=tape.gradient(Loss,MODE.trainable_variables)
+        tf.keras.optimizers.Adagrad(learn_rate).apply_gradients(zip(grades,MODE.trainable_variables))
+        print('>>>Processes id:{}, Block_id:{}/{},Block_loss:{}'.format(os.getpid(),Block_id+1,total_num,Loss))
+        for g_id in range(count):
+            subMode_grade[g_id] += grades[g_id]
+
+    queue.put((MODE.trainable_variables,Loss,subMode_grade))
+
 
 
 def FLS_TrainFun_parallel(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrain,Xpredict,Ypredict=None,\

@@ -175,6 +175,11 @@ def SubMode_train(MODE,lossFunction,Xtrain_subMode,Ytrain_subMode,batch_size,que
     for g in MODE.trainable_variables:
         count += 1
         subMode_grade.append(tf.zeros(g.shape))
+
+    if len(Xtrain_subMode)%batch_size == 0:
+        total_num = len(Xtrain_subMode)//batch_size
+    else:
+        total_num = len(Xtrain_subMode)//batch_size+1
     
     for Block_id in range(len(Xtrain_subMode) // batch_size):
         with tf.GradientTape() as tape:
@@ -185,10 +190,20 @@ def SubMode_train(MODE,lossFunction,Xtrain_subMode,Ytrain_subMode,batch_size,que
         #     MODE.trainable_variables[i] = MODE.trainable_variables[i] + learn_rate*grades[i]
 
         tf.keras.optimizers.Adagrad(learn_rate).apply_gradients(zip(grades,MODE.trainable_variables))
-        print('>>>Processes id:{}, Block_id:{}/{},Block_loss:{}'.format(os.getpid(),Block_id+1,len(Xtrain_subMode)//batch_size,Loss))
+        print('>>>Processes id:{}, Block_id:{}/{},Block_loss:{}'.format(os.getpid(),Block_id+1,total_num,Loss))
         for g_id in range(count):
              subMode_grade[g_id] += grades[g_id]
     #queue.put((subMode_grade,Loss))
+    if len(Xtrain_subMode)%batch_size != 0:
+        with tf.GradientTape() as tape:
+            output_data=MODE(Xtrain_subMode[len(Xtrain_subMode)-(len(Xtrain_subMode) % batch_size):,:])
+            Loss=lossFunction(output_data,Ytrain_subMode[len(Xtrain_subMode)-(len(Xtrain_subMode) % batch_size):])
+        grades=tape.gradient(Loss,MODE.trainable_variables)
+        tf.keras.optimizers.Adagrad(learn_rate).apply_gradients(zip(grades,MODE.trainable_variables))
+        print('>>>Processes id:{}, Block_id:{}/{},Block_loss:{}'.format(os.getpid(),Block_id+1,total_num,Loss))
+        for g_id in range(count):
+            subMode_grade[g_id] += grades[g_id]
+
     queue.put((MODE.trainable_variables,Loss,subMode_grade))
 
 
@@ -303,8 +318,8 @@ for i in range(n_train):
 
 data_Num = 4
 Rule = [16,32]
-Epoch_num = 1
-processes_num = [processes_N for processes_N in range(2,22,2)]
+Epoch_num = 20
+processes_num = [processes_N for processes_N in range(12,18,2)]
 AntecedentsNum=4
 data_size=500
 predict_size = 300
@@ -363,6 +378,7 @@ for r in range(len(Rule)):
             parallel_time[r,d,p] = _time
             parallel_predict_RMSE[r,d,p] = _predict_RMSE
             parallel_RMSE[r,d,p,:] = _RMSE
+            print('r={},d={},p={}'.format(Rule[r],(d+1)*data_size,processes_num[p]))
 
 np.save("parallel_time.npy",parallel_time)
 np.save("parallel_predict_RMSE.npy",parallel_predict_RMSE)        

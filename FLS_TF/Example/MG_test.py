@@ -148,5 +148,5 @@ LL=[['G','G','G','G'],['G','G','G','G'],
 
 FLS_TrainFun_parallel(16,4,LL,X_train,Y_train,X_test,Ypredict=Y_test,modeName='Mamdani',modeType=1,predictMode=False,\
     validationRatio=0.2,XvalidationSet=None,YvalidationSet=None,\
-    optimizer=tf.keras.optimizers.Adam(0.1),lossFunction=tf.keras.losses.mean_squared_error,\
-    batchSIZE=32,epoch=12,subMode_learningRate=tf.constant(0.01),useGPU=True,processesNum=8)
+    optimizer=tf.keras.optimizers.Adam(0.05),lossFunction=tf.keras.losses.mean_squared_error,\
+    batchSIZE=32,epoch=10,subMode_learningRate=tf.constant(0.01),useGPU=True,processesNum=12)
