@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import MultipleLocator
 
-'''
+
 serial_time = np.load("serial_time.npy")
 serial_predict_RMSE = np.load("serial_predict_RMSE.npy")
 serial_RMSE = np.load("serial_RMSE.npy")
@@ -23,7 +23,8 @@ parallel_time = np.random.rand(1,4,8)
 parallel_predict_RMSE = np.random.rand(1,4,8)
 parallel_RMSE = np.random.rand(1,4,8,20)
 
-'''
+
+
 time_now = time.strftime("%Y%m%d-%H%M",time.localtime())
 #SavePath = os.path.split(__file__)[0]+'/'+time_now
 SavePath = os.getcwd()+'/'+time_now+"Save_picture"
@@ -47,7 +48,7 @@ for i in range(Rule_NUM):
     for j in range(data_NUM):
         ax1 = plt.subplot(2,2,j+1)
         #plt.grid(True)
-        plt.plot(range(1,epoch_NUM+1,1),serial_RMSE[i,j,:],linewidth='2',color='black')
+        
         plt.xlim(1,epoch_NUM)
         plt.title("Train data num:"+str((j+1)*500),fontsize=14)
         plt.ylabel('RMSE',fontsize=14)
@@ -60,7 +61,10 @@ for i in range(Rule_NUM):
 
         for k in range(0,8,):
             plt.plot(range(1,epoch_NUM+1,1),parallel_RMSE[i,j,k,:])
+
+        plt.plot(range(1,epoch_NUM+1,1),serial_RMSE[i,j,:],linewidth='2',color='black')
         plt.legend(["s1","p2","p4","p6","p8","p10","p12","p14","p16"],loc=1)
+
 
 
 plt.figure()
@@ -72,17 +76,19 @@ plt.xlabel('Processer num',fontsize=14)
 ax1_1.xaxis.set_major_locator(MultipleLocator(2))
 for j in range(data_NUM):
     plt.plot(range(2,18,2),speedup_ratio[0,j,:])
-plt.legend(["d500","d1000","d1500","d2000"],loc=1)
+    plt.scatter(range(2,18,2),speedup_ratio[0,j,:])
+plt.legend(["d500","d1000","d1500","d2000"])
 
 ah=[]
 for j in range(4):
-    ah.append(speedup_ratio[0,j,2*j-1])
+    ah.append(speedup_ratio[0,j,j])
 ax1_2 = plt.subplot(1,2,2)
 plt.xlim(4,16)
 plt.ylabel('Speedup Ratio',fontsize=14)
 plt.xlabel('Processer num',fontsize=14)    
 ax1_2.xaxis.set_major_locator(MultipleLocator(4))
 plt.plot(range(4,18,4),ah)
+plt.scatter(range(4,18,4),ah)
 
 
 
