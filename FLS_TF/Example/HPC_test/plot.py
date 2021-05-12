@@ -48,11 +48,11 @@ for i in range(Rule_NUM):
     for j in range(data_NUM):
         ax1 = plt.subplot(2,2,j+1)
         #plt.grid(True)
-        
+        plt.plot(range(1,epoch_NUM+1,1),serial_RMSE[i,j,:],linewidth='2',color='black')        
         plt.xlim(1,epoch_NUM)
-        plt.title("Train data num:"+str((j+1)*500),fontsize=14)
-        plt.ylabel('RMSE',fontsize=14)
-        plt.xlabel('epoch',fontsize=14)
+        plt.title("Train data num:"+str((j+1)*500),fontsize=16)
+        plt.ylabel('RMSE',fontsize=16)
+        plt.xlabel('epoch',fontsize=16)
         ax1.xaxis.set_major_locator(MultipleLocator(2))
 
         #for k in range(4,17,4):
@@ -62,17 +62,18 @@ for i in range(Rule_NUM):
         for k in range(0,8,):
             plt.plot(range(1,epoch_NUM+1,1),parallel_RMSE[i,j,k,:])
 
-        plt.plot(range(1,epoch_NUM+1,1),serial_RMSE[i,j,:],linewidth='2',color='black')
         plt.legend(["s1","p2","p4","p6","p8","p10","p12","p14","p16"],loc=1)
+        plt.plot(range(1,epoch_NUM+1,1),serial_RMSE[i,j,:],linewidth='2',color='black')           
 
-
+plt.tight_layout()
 
 plt.figure()
 ax1_1 = plt.subplot(1,2,1)
 #plt.grid(True)
 plt.xlim(2,16)
-plt.ylabel('Speedup Ratio',fontsize=14)
-plt.xlabel('Processer num',fontsize=14)
+plt.ylim(2,16)
+plt.ylabel('Speedup Ratio',fontsize=16)
+plt.xlabel('Processer num',fontsize=16)
 ax1_1.xaxis.set_major_locator(MultipleLocator(2))
 for j in range(data_NUM):
     plt.plot(range(2,18,2),speedup_ratio[0,j,:])
@@ -84,8 +85,9 @@ for j in range(4):
     ah.append(speedup_ratio[0,j,j])
 ax1_2 = plt.subplot(1,2,2)
 plt.xlim(4,16)
-plt.ylabel('Speedup Ratio',fontsize=14)
-plt.xlabel('Processer num',fontsize=14)    
+plt.ylim(1,16)
+plt.ylabel('Speedup Ratio',fontsize=16)
+plt.xlabel('Processer num',fontsize=16)    
 ax1_2.xaxis.set_major_locator(MultipleLocator(4))
 plt.plot(range(4,18,4),ah)
 plt.scatter(range(4,18,4),ah)
@@ -99,10 +101,10 @@ for i in range(Rule_NUM):
     plt.plot(range(500,4*500+1,500),serial_predict_RMSE[i,:],linewidth='2',color='black')
     plt.scatter(range(500,4*500+1,500),serial_predict_RMSE[i,:],linewidth='2',color='black')
     plt.xlim(450,2050)
-    plt.title("Predict RMSE",fontsize=14)
-    plt.ylabel('RMSE',fontsize=14)
+    plt.title("Predict RMSE",fontsize=16)
+    plt.ylabel('RMSE',fontsize=16)
     #plt.grid(True)
-    plt.xlabel('Data num',fontsize=14)
+    plt.xlabel('Data num',fontsize=16)
     ax.xaxis.set_major_locator(MultipleLocator(500))
     for j in range(processer_NUM):
         plt.plot(range(500,4*500+1,500),parallel_predict_RMSE[i,:,j])
