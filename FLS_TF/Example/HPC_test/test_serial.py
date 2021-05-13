@@ -301,7 +301,7 @@ for i in range(n_train):
 #plt.show()
 
 data_Num = 4
-Rule = [16,32]
+Rule = [16]
 Epoch_num = 20
 #processes_num = [processes_N for processes_N in range(2,22,2)]
 AntecedentsNum=4

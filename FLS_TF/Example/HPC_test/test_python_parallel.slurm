@@ -2,7 +2,7 @@
 #BATCH -J test_parallel
 #SBATCH -p cpu-low
 #SBATCH -N 1
-#SBATCH -n 1
+#SBATCH -n 16
 #SBATCH -t 150:00:00
 #SBATCH -o test_parallel.out
 #SBATCH -e test_parallel.err
