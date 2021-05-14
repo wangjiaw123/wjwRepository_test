@@ -14,12 +14,12 @@ import numpy as np
 from tensorflow.python.eager.backprop import GradientTape
 from tensorflow.python.ops.functional_ops import Gradient
 #导入2型FLS系统
-from ST2FLS.SingleT2FLS_Mamdani import *
-from ST2FLS.SingleT2FLS_TSK import *
-from ST2FLS.SingleT2FLS_FWA import *
+from ST2FLS.ST2FLS_Mamdani import *
+from ST2FLS.ST2FLS_TSK import *
+from ST2FLS.ST2FLS_FWA import *
 #导入1型FLS系统
-from ST1FLS.SingleT1FLS_Mamdani import *
-from ST1FLS.SingleT1FLS_TSK import *
+from ST1FLS.ST1FLS_Mamdani import *
+from ST1FLS.ST1FLS_TSK import *
 
 def FLS_TrainFun(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrain,Xpredict,Ypredict=None,\
     modeName='Mamdani',modeType=2,predictMode=True,validationRatio=0.1,XvalidationSet=None,YvalidationSet=None,\
@@ -27,10 +27,10 @@ def FLS_TrainFun(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrain,Xpredi
     batchSIZE=1,epoch=5,useGPU=False,saveMode=False,outputModeName=None,modeSavePath=None):
 
     '''
-    Rule_num:规则数量,Antecedents_num:前件数量,InitialSetup_List:模糊规则初始化列表
-    Xtrain,Ytrain,表示训练数据的输入和相应的标签
-    batchSIZE:批量大小,useGPU:设置是否使用GPU训练模型,saveMode:设置是否保存模型,
-    modeName:模型的命名(后缀名为.h5,例如'mode.h5'),modeSavePath:设置保存模型的路径.
+    Rule_num:规则数量,Antecedents_num:前件数量,InitialSetup_List:模糊规则初始化列表，Xtrain,Ytrain,表示训练数据的输入和相应的标签，
+    Xpredict表示测试数据，Ypredict表示测试数据的标签(与predictMode参数同时起作用，若predictMode=True，则Xpredict,Ypredict=None，
+    若predictMode=False，则Xpredict,Ypredict需要传入数据)，batchSIZE:批量大小,epoch设置训练轮数,useGPU:设置是否使用GPU训练模型,
+    modeName:模型的命名,如果modeType=1,modeName处可以选择'Mamdani'、'TSK';如果modeType=2,modeName处可以选择'Mamdani'、'TSK'、'FWA'.
     '''
     startime=time.time()
     if useGPU:
@@ -44,7 +44,7 @@ def FLS_TrainFun(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrain,Xpredi
             #    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=4096)]) 
             tf.config.set_visible_devices([gpu0],"GPU")
 
-    Mode_Name='SingleT'+str(modeType)+'FLS_'+modeName
+    Mode_Name='ST'+str(modeType)+'FLS_'+modeName
     Mode=eval(Mode_Name+str((Rule_num,Antecedents_num,InitialSetup_List)))
 
     print('******************************************************************')

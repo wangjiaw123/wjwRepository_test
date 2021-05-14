@@ -6,7 +6,6 @@
 # Note : Parallel algorithm must be run on Linux system.
 
 
-
 import sys
 
 #from tensorflow.python.framework.load_library import load_file_system_library
@@ -17,20 +16,19 @@ import random
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
-from multiprocessing import Process, Queue       #使用多进程加速，实现并行算法
+from multiprocessing import Process, Queue      
 
 from tensorflow.python.eager.backprop import GradientTape
 from tensorflow.python.ops.functional_ops import Gradient
 #导入2型FLS系统
-from ST2FLS.SingleT2FLS_Mamdani import *
-from ST2FLS.SingleT2FLS_TSK import *
-from ST2FLS.SingleT2FLS_FWA import *
+from ST2FLS.ST2FLS_Mamdani import *
+from ST2FLS.ST2FLS_TSK import *
+from ST2FLS.ST2FLS_FWA import *
 #导入1型FLS系统
-from ST1FLS.SingleT1FLS_Mamdani import *
-from ST1FLS.SingleT1FLS_TSK import *
+from ST1FLS.ST1FLS_Mamdani import *
+from ST1FLS.ST1FLS_TSK import *
 
 
-# 子进程调用
 '''
 def SubMode_train(MODE,lossFunction,Xtrain_subMode,Ytrain_subMode,batch_size,queue,learn_rate=tf.constant(0.001)):
     lackNum = batch_size-len(Xtrain_subMode) % batch_size
@@ -60,7 +58,7 @@ def SubMode_train(MODE,lossFunction,Xtrain_subMode,Ytrain_subMode,batch_size,que
     queue.put((MODE.trainable_variables,Loss,subMode_grade))
 '''
 
-# 子进程调用
+# 进程中子模型的规则学习
 def SubMode_train(MODE,lossFunction,Xtrain_subMode,Ytrain_subMode,batch_size,queue,learn_rate=tf.constant(0.001)):
     lackNum = batch_size-len(Xtrain_subMode) % batch_size
     copy_sample_id = random.sample(range(0,len(Xtrain_subMode)),lackNum)
@@ -111,10 +109,10 @@ def FLS_TrainFun_parallel(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytra
     batchSIZE=1,epoch=5,subMode_learningRate=tf.constant(0.01),useGPU=False,processesNum=None,RMSE_threshold=None):
 
     '''
-    Rule_num:规则数量,Antecedents_num:前件数量,InitialSetup_List:模糊规则初始化列表
-    Xtrain,Ytrain,表示训练数据的输入和相应的标签
-    batchSIZE:批量大小,useGPU:设置是否使用GPU训练模型,saveMode:设置是否保存模型,
-    modeName:模型的命名(后缀名为.h5,例如'mode.h5'),modeSavePath:设置保存模型的路径.
+    Rule_num:规则数量,Antecedents_num:前件数量,InitialSetup_List:模糊规则初始化列表，Xtrain,Ytrain,表示训练数据的输入和相应的标签，
+    Xpredict表示测试数据，Ypredict表示测试数据的标签(与predictMode参数同时起作用，若predictMode=True，则Xpredict,Ypredict=None，
+    若predictMode=False，则Xpredict,Ypredict需要传入数据)，batchSIZE:批量大小,epoch设置训练轮数,useGPU:设置是否使用GPU训练模型,
+    modeName:模型的命名,如果modeType=1,modeName处可以选择'Mamdani'、'TSK';如果modeType=2,modeName处可以选择'Mamdani'、'TSK'、'FWA'.
     '''
     startime=time.time()
     if useGPU:
@@ -128,7 +126,7 @@ def FLS_TrainFun_parallel(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytra
             #    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=4096)]) 
             tf.config.set_visible_devices([gpu0],"GPU")
 
-    Mode_Name='SingleT'+str(modeType)+'FLS_'+modeName
+    Mode_Name='ST'+str(modeType)+'FLS_'+modeName
     Mode=eval(Mode_Name+str((Rule_num,Antecedents_num,InitialSetup_List)))
 
     print('******************************************************************')
@@ -193,10 +191,6 @@ def FLS_TrainFun_parallel(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytra
         optimizer.apply_gradients(zip(Grades_set[2],Mode.trainable_variables))
                    
         # optimizer.apply_gradients(zip(Grades_set[0],Mode.trainable_variables))
-
-        #print('Grades_set',Grades_set)
-
-        #saveloss+=tf.reduce_sum(Loss).numpy()
 
         #print('>>>>>>>>>> epoch:{}/{},Block_SizeOfProcesses:{},block_loss:{}'.format(epoch_id+1,epoch,Block_id+1,Block_SizeOfProcesses,Loss))
             #print('**********grades:',grades)

@@ -5,25 +5,27 @@
 
 import sys
 sys.path.append("..")
-from Membership_Function.MembershipFunction_T1 import *
+from MF.MF_T1 import *
 import tensorflow as tf
-import numpy as np
+#import numpy as np
+#import pp
 
-class SingleT1FLS_TSK(tf.keras.Model):
+class ST1FLS_Mamdani(tf.keras.Model):
     #构造函数__init__
     def __init__(self,FuzzyRuleNum,FuzzyAntecedentsNum,InitialSetup_List):
-        super(SingleT1FLS_TSK,self).__init__()
+        super(ST1FLS_Mamdani,self).__init__()
         self.Rule_num = FuzzyRuleNum
         self.Antecedents_num = FuzzyAntecedentsNum
         self.Init_SetupList = InitialSetup_List
-        FuzzyRuleBase_weights,FRBparameterNum,C_init = self._initialize_weight(InitialSetup_List)
+        FuzzyRuleBase_weights,FRBparameterNum,c1_init = self._initialize_weight(InitialSetup_List)
         self.FRB_weights = FuzzyRuleBase_weights
         self.FRB_parameterNum = FRBparameterNum 
-        self.C = C_init
+        self.c1 = c1_init
 
     def Setting_parameters(self,Grades_set):
         self.FRB_weights.assign(Grades_set[0])
-        self.C.assign(Grades_set[1])
+        self.c1.assign(Grades_set[1])
+
 
     #模糊规则库参数初始化
     def _initialize_weight(self,InitialSetup_List):
@@ -31,7 +33,7 @@ class SingleT1FLS_TSK(tf.keras.Model):
         FRB_ParaList = list()
         for i in range(self.Rule_num):
             for j in range(self.Antecedents_num):
-
+                #默认是高斯1型隶属函数
                 if self.Init_SetupList[i][j] == 'Gauss2':
                     FRB_ParaList.append(4)
                     FRB_ParaNum +=4
@@ -56,19 +58,13 @@ class SingleT1FLS_TSK(tf.keras.Model):
                 else:         # self.Init_SetupList[i][j] == 'Gauss1':
                     FRB_ParaList.append(2)
                     FRB_ParaNum +=2
-
-        FRB_W = tf.Variable(tf.math.abs(tf.random.get_global_generator().normal(\
-            shape=(FRB_ParaNum,))),trainable=True)
-        C = tf.Variable(tf.abs(tf.random.get_global_generator().normal(shape=(\
-            self.Rule_num,self.Antecedents_num+1))),trainable=True) #初始化c1
+        #print('<<<<<<<<<<<<<<<<<<<',FRB_ParaList,FRB_ParaNum)
+        FRB_W = tf.Variable(tf.math.abs(tf.random.get_global_generator().normal(shape=(FRB_ParaNum,))),trainable=True)
+        c1 = tf.Variable(tf.abs(tf.random.get_global_generator().normal(shape=(self.Rule_num,))),trainable=True)     #初始化c1
 
         print('***********Initialization of fuzzy rule base parameters completed!*************')
-        return FRB_W,FRB_ParaList,C
+        return FRB_W,FRB_ParaList,c1  
 
-    def Post_out(self,x):
-        C_help = tf.reduce_sum(tf.multiply(x,self.C[:,1:]),1)+self.C[:,0]
-        return C_help
-       
 
     def call(self,input_data):
         samples_num = input_data.shape[0]
@@ -88,6 +84,7 @@ class SingleT1FLS_TSK(tf.keras.Model):
                         u_help = Trapmf(input[k],self.FRB_weights[locat_num:locat_num+4])
                     elif self.Init_SetupList[i][k] == 'Tri':
                         u_help = Trimf(input[k],self.FRB_weights[locat_num:locat_num+3])
+                        #print('****Tri:u_help',u_help)
                     elif self.Init_SetupList[i][k] == 'Sig':
                         u_help = Sigmf(input[k],self.FRB_weights[locat_num:locat_num+2])
                     elif self.Init_SetupList[i][k] == 'Gbell':
@@ -96,32 +93,20 @@ class SingleT1FLS_TSK(tf.keras.Model):
                         u_help = Psigmf(input[k],self.FRB_weights[locat_num:locat_num+4])
                     elif self.Init_SetupList[i][k] == 'Dsig':
                         u_help = Dsigmf(input[k],self.FRB_weights[locat_num:locat_num+4])
-                    else:         # InitialSetup_List[i][j] == 'Gauss1':
+                    else:         # self.Init_SetupList[i][j] == 'Gauss1':
                         u_help = Gauss1mf(input[k],self.FRB_weights[locat_num:locat_num+2])                
                     uu*=u_help
                 UU=tf.tensor_scatter_nd_update(UU,tf.constant([[i]]),[uu]) 
-            C_help = self.Post_out(input)   
-            Output = tf.tensor_scatter_nd_update(Output,tf.constant([[sample_i]]),
-                [tf.reduce_sum(tf.multiply(UU,C_help)/tf.reduce_sum(UU))])
+                #print('*******UU:',UU)   
+            Output = tf.tensor_scatter_nd_update(Output,tf.constant([[sample_i]]), 
+                [tf.reduce_sum(tf.multiply(UU,self.c1)/tf.reduce_sum(UU))])       
         return Output
+     
 
 
 
 
-# # 测试
-# import numpy as np
-# N=100
-# train_data_x=np.random.random((N,6))
-# train_data_y=np.random.random((N,1))
 
-# LL=[['G','G','G','G','G','G'],['G','G','G','G','G','G'],['G','G','G','G','G','G'],['G','G','G','G','G','G']]
 
-# FLS1_tsk=SingleT1FLS_TSK(4,6,LL)
-
-# #print(FLS1_tsk.GetFRB_weights())
-# print(FLS1_tsk.trainable_variables)
-# print('*****************************')
-# output=FLS1_tsk(train_data_x)
-# print(output)
 
 

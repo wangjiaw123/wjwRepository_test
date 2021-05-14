@@ -46,10 +46,10 @@ def Gausstype2(Xt_gs,GaussT2_parameter):
     return mu2,mu1        #mu2<=mu1
 
 
-class SingleT2FLS_Mamdani(tf.keras.Model):
+class ST2FLS_Mamdani(tf.keras.Model):
     #构造函数__init__
     def __init__(self,FuzzyRuleNum,FuzzyAntecedentsNum,InitialSetup_List):
-        super(SingleT2FLS_Mamdani,self).__init__()
+        super(ST2FLS_Mamdani,self).__init__()
         self.Rule_num = FuzzyRuleNum
         self.Antecedents_num = FuzzyAntecedentsNum
         self.Init_SetupList = InitialSetup_List
@@ -163,10 +163,10 @@ class SingleT2FLS_Mamdani(tf.keras.Model):
         #print('Output:',Output)
         return Output
 
-class SingleT2FLS_FWA(tf.keras.Model):
+class ST2FLS_FWA(tf.keras.Model):
     #构造函数__init__
     def __init__(self,FuzzyRuleNum,FuzzyAntecedentsNum,InitialSetup_List):
-        super(SingleT2FLS_FWA,self).__init__()
+        super(ST2FLS_FWA,self).__init__()
         self.Rule_num = FuzzyRuleNum
         self.Antecedents_num = FuzzyAntecedentsNum
         self.Init_SetupList = InitialSetup_List
@@ -328,10 +328,6 @@ class SingleT2FLS_FWA(tf.keras.Model):
         #print('Output:',Output)
         return Output
 
-
-
-
-# 子进程调用
 def SubMode_train(MODE,lossFunction,Xtrain_subMode,Ytrain_subMode,batch_size,queue,learn_rate=tf.constant(0.001)):
     lackNum = batch_size-len(Xtrain_subMode) % batch_size
     copy_sample_id = random.sample(range(0,len(Xtrain_subMode)),lackNum)
@@ -381,7 +377,7 @@ def FLS_TrainFun_parallel_1(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Yt
 
     startime=time.time()
 
-    Mode_Name='SingleT'+str(modeType)+'FLS_'+modeName
+    Mode_Name='ST'+str(modeType)+'FLS_'+modeName
     Mode=eval(Mode_Name+str((Rule_num,Antecedents_num,InitialSetup_List)))
 
     print('******************************************************************')
@@ -536,6 +532,8 @@ LL=[['G','G','G','G','G','G'],['G','G','G','G','G','G'],
 parallel_time = np.zeros([len(Rule),data_Num,len(processes_num)])
 parallel_predict_RMSE = np.zeros([len(Rule),data_Num,len(processes_num)])
 parallel_RMSE = np.zeros([len(Rule),data_Num,len(processes_num),Epoch_num])
+
+# modeName:模型的命名,如果modeType=1,modeName处可以选择'Mamdani'、'TSK';如果modeType=2,modeName处可以选择'Mamdani'、'TSK'、'FWA'.
 
 for r in range(len(Rule)):
     for d in range(data_Num):

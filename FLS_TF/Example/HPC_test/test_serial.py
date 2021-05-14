@@ -3,8 +3,6 @@
 # @Time    : 2021/5/4
 # @Author  : Wangjiawen
 
-# Note : Parallel algorithm must be run on Linux system.
-
 
 import sys
 sys.path.append("..")
@@ -15,7 +13,7 @@ import time
 import random
 import tensorflow as tf
 
-from multiprocessing import Process, Queue       #使用多进程加速，实现并行算法
+from multiprocessing import Process, Queue       
 
 from tensorflow.python.eager.backprop import GradientTape
 from tensorflow.python.ops.functional_ops import Gradient
@@ -44,10 +42,10 @@ def Gausstype2(Xt_gs,GaussT2_parameter):
     return mu2,mu1        #mu2<=mu1
 
 
-class SingleT2FLS_Mamdani(tf.keras.Model):
+class ST2FLS_Mamdani(tf.keras.Model):
     #构造函数__init__
     def __init__(self,FuzzyRuleNum,FuzzyAntecedentsNum,InitialSetup_List):
-        super(SingleT2FLS_Mamdani,self).__init__()
+        super(ST2FLS_Mamdani,self).__init__()
         self.Rule_num = FuzzyRuleNum
         self.Antecedents_num = FuzzyAntecedentsNum
         self.Init_SetupList = InitialSetup_List
@@ -197,7 +195,7 @@ def FLS_TrainFun_parallel_1(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Yt
 
     startime=time.time()
 
-    Mode_Name='SingleT'+str(modeType)+'FLS_'+modeName
+    Mode_Name='ST'+str(modeType)+'FLS_'+modeName
     Mode=eval(Mode_Name+str((Rule_num,Antecedents_num,InitialSetup_List)))
 
     print('******************************************************************')
@@ -352,6 +350,8 @@ LL=[['G','G','G','G','G','G'],['G','G','G','G','G','G'],
 serial_time = np.zeros([len(Rule),data_Num])
 serial_predict_RMSE = np.zeros([len(Rule),data_Num])
 serial_RMSE = np.zeros([len(Rule),data_Num,Epoch_num])
+
+# modeName:模型的命名,如果modeType=1,modeName处可以选择'Mamdani'、'TSK';如果modeType=2,modeName处可以选择'Mamdani'、'TSK'、'FWA'.
 
 for r in range(len(Rule)):
     for d in range(data_Num):

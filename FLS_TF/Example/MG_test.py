@@ -150,3 +150,5 @@ FLS_TrainFun_parallel(16,4,LL,X_train,Y_train,X_test,Ypredict=Y_test,modeName='M
     validationRatio=0.2,XvalidationSet=None,YvalidationSet=None,\
     optimizer=tf.keras.optimizers.Adam(0.05),lossFunction=tf.keras.losses.mean_squared_error,\
     batchSIZE=32,epoch=10,subMode_learningRate=tf.constant(0.01),useGPU=True,processesNum=12)
+
+# modeName:模型的命名,如果modeType=1,modeName处可以选择'Mamdani'、'TSK';如果modeType=2,modeName处可以选择'Mamdani'、'TSK'、'FWA'.
