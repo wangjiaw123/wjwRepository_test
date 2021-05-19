@@ -73,15 +73,16 @@ def FLS_TrainFun(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrain,Xpredi
                 output_data=Mode(Xtrain[Block_id*batchSIZE:Block_id*batchSIZE+batchSIZE,:])
                 #print('output_data',output_data)
                 Loss=lossFunction(output_data,Ytrain[Block_id*batchSIZE:Block_id*batchSIZE+batchSIZE])
+                Loss=tf.clip_by_value(Loss,0.0000001,10)
             grades=tape.gradient(Loss,Mode.trainable_variables)
             optimizer.apply_gradients(zip(grades,Mode.trainable_variables))
             saveloss+=tf.reduce_sum(Loss).numpy()
             print('>>>>>>>>>> epoch:{}/{},block_id:{},block_size:{},block_loss:{}'.format(epoch_id+1,epoch,Block_id+1,Block_size,Loss))
             #print('**********grades:',grades)
-        Loss_save[epoch_id]=saveloss
+        Loss_save[epoch_id]=tf.sqrt(saveloss/len(Xtrain))
 
         output_data_validat=Mode(XvalidationSet)
-        Loss_validat[epoch_id]=lossFunction(output_data_validat,YvalidationSet)
+        Loss_validat[epoch_id]=tf.sqrt(lossFunction(output_data_validat,YvalidationSet)/len(XvalidationSet))
         print('epoch:{}/{},Loss:{},Loss_validat:{}'.format(epoch_id+1,epoch,Loss,Loss_validat[epoch_id]))
     
     endtime=time.time()
@@ -115,7 +116,7 @@ def FLS_TrainFun(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytrain,Xpredi
         return outputPredict
     else:
         outputPredict=Mode(Xpredict)   
-        Loss_predict=lossFunction(Ypredict,outputPredict)
+        Loss_predict=tf.sqrt(lossFunction(Ypredict,outputPredict)/len(Xpredict))
         print('Predict Mode,the predict loss:{}'.format(Loss_predict))
         plt.figure()
         plt.plot(np.linspace(len(Xtrain)+1,len(Xpredict)+len(Xtrain)+1,len(Xpredict)),Ypredict)

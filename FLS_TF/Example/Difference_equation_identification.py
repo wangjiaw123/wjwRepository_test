@@ -6,6 +6,8 @@ import numpy as np
 import tensorflow as tf
 from Train.FLS_TrainFun import FLS_TrainFun
 from Train.FLS_TrainFun_parallel import FLS_TrainFun_parallel
+
+
 K = 1500
 y = np.zeros(K)
 G = np.zeros(K)
@@ -66,16 +68,16 @@ LL=[['G','G','G','G','G','G'],['G','G','G','G','G','G'],
     ['G','G','G','G','G','G'],['G','G','G','G','G','G']]
 
 
-# FLS_TrainFun(24,2,LL,X_train,Y_train,X_test,Ypredict=Y_test,modeName='TSK',modeType=2,predictMode=False,\
+# FLS_TrainFun(24,2,LL,X_train,Y_train,X_test,Ypredict=Y_test,modeName='Mamdani',modeType=2,predictMode=False,\
 #    validationRatio=0.2,XvalidationSet=None,YvalidationSet=None,\
-#    optimizer=tf.keras.optimizers.Adam(0.01),lossFunction=tf.keras.losses.mean_squared_error,\
+#    optimizer=tf.keras.optimizers.Adam(0.5),lossFunction=tf.keras.losses.mean_squared_error,\
 #    batchSIZE=32,epoch=15,useGPU=False,saveMode=False,outputModeName=None,modeSavePath=None)
 
 
-FLS_TrainFun_parallel(16,2,LL,X_train,Y_train,X_test,Ypredict=Y_test,modeName='Mamdani',modeType=2,predictMode=False,\
+FLS_TrainFun_parallel(16,2,LL,X_train,Y_train,X_test,Ypredict=Y_test,modeName='TSK',modeType=2,predictMode=False,\
     validationRatio=0.1,XvalidationSet=None,YvalidationSet=None,\
     optimizer=tf.keras.optimizers.Adam(0.05),lossFunction=tf.keras.losses.mean_squared_error,\
-    batchSIZE=16,epoch=12,subMode_learningRate=tf.constant(0.5),useGPU=False,processesNum=2)   
+    batchSIZE=16,epoch=12,subMode_learningRate=tf.constant(0.005),useGPU=False,processesNum=4)   
 
 
 

@@ -80,6 +80,7 @@ def SubMode_train(MODE,lossFunction,Xtrain_subMode,Ytrain_subMode,batch_size,que
         with tf.GradientTape() as tape:
             output_data=MODE(Xtrain_subMode[Block_id*batch_size:(Block_id+1)*batch_size,:])
             Loss=lossFunction(output_data,Ytrain_subMode[Block_id*batch_size:(Block_id+1)*batch_size])
+            Loss=tf.clip_by_value(Loss,0.000001,10)
         grades=tape.gradient(Loss,MODE.trainable_variables)
         # for i in range(len(grades)):
         #     MODE.trainable_variables[i] = MODE.trainable_variables[i] + learn_rate*grades[i]
@@ -93,6 +94,7 @@ def SubMode_train(MODE,lossFunction,Xtrain_subMode,Ytrain_subMode,batch_size,que
         with tf.GradientTape() as tape:
             output_data=MODE(Xtrain_subMode[len(Xtrain_subMode)-(len(Xtrain_subMode) % batch_size):,:])
             Loss=lossFunction(output_data,Ytrain_subMode[len(Xtrain_subMode)-(len(Xtrain_subMode) % batch_size):])
+            Loss=tf.clip_by_value(Loss,0.000001,10)
         grades=tape.gradient(Loss,MODE.trainable_variables)
         tf.keras.optimizers.Adagrad(learn_rate).apply_gradients(zip(grades,MODE.trainable_variables))
         print('>>>Processes id:{}, Block_id:{}/{},Block_loss:{}'.format(os.getpid(),Block_id+1,total_num,Loss))
@@ -194,10 +196,10 @@ def FLS_TrainFun_parallel(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytra
 
         #print('>>>>>>>>>> epoch:{}/{},Block_SizeOfProcesses:{},block_loss:{}'.format(epoch_id+1,epoch,Block_id+1,Block_SizeOfProcesses,Loss))
             #print('**********grades:',grades)
-        Loss_save[epoch_id]= tf.sqrt(saveloss)
+        Loss_save[epoch_id]= tf.sqrt(saveloss/len(Xtrain))
 
         output_data_validat=Mode(XvalidationSet)
-        Loss_validat[epoch_id]=tf.sqrt(lossFunction(output_data_validat,YvalidationSet))
+        Loss_validat[epoch_id]=tf.sqrt(lossFunction(output_data_validat,YvalidationSet)/len(XvalidationSet))
         print('epoch:{}/{},loss:{},loss_validat:{}'.format(epoch_id+1,epoch,saveloss,Loss_validat[epoch_id]))
 
         # 3次小于阈值则结束
@@ -267,7 +269,7 @@ def FLS_TrainFun_parallel(Rule_num,Antecedents_num,InitialSetup_List,Xtrain,Ytra
         return outputPredict
     else:
         outputPredict=Mode(Xpredict)   
-        Loss_predict=lossFunction(Ypredict,outputPredict)
+        Loss_predict=tf.sqrt(lossFunction(Ypredict,outputPredict)/len(Xpredict))
         print('Predict Mode,the predict loss:{}'.format(Loss_predict))
         plt.figure()
         plt.grid(True)

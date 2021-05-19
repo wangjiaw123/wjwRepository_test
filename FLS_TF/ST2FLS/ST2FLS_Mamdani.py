@@ -68,7 +68,7 @@ class ST2FLS_Mamdani(tf.keras.Model):
         s1 = 0
         b2=c1_sort
         s = tf.reduce_sum(tf.multiply(b2,LL_sort))
-        s1 = tf.reduce_sum(LL_sort)
+        s1 = tf.reduce_sum(LL_sort)+0.0000001
         l_out=s/s1
         for i in range(self.Rule_num):
             s += b2[i]*(UU_sort[i]-LL_sort[i])
@@ -87,7 +87,7 @@ class ST2FLS_Mamdani(tf.keras.Model):
         s1 = 0
         b1=c2_sort
         s = tf.reduce_sum(tf.multiply(b1,UU_sort))
-        s1 = tf.reduce_sum(UU_sort)
+        s1 = tf.reduce_sum(UU_sort)+0.0000001
         r_out=s/s1
         for i in range(self.Rule_num):
             s += b1[i]*(LL_sort[i]-UU_sort[i])
